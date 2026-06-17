@@ -13,6 +13,7 @@ dist-ssr
 *.local
 .venv
 __pycache__
+lsa_app.db
 
 # Editor directories and files
 .vscode/*
@@ -24,3 +25,8 @@ __pycache__
 *.njsproj
 *.sln
 *.sw?
+
+.gitignore
+frontend.rar
+backend.rar
+lsa_app.db

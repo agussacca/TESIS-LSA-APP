@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -11,12 +12,33 @@ from config import (
     FRAMES_PER_VIDEO,
     TRAINED_MODELS_DIR,
 )
-from core.model_gru import GRUClassifier
+from core.model_gru import GRUClassifier, LSTMClassifier
 from core.train_utils import get_device, load_checkpoint
 
 
-MODEL_NAME = "abecedario_gru_v2"
-MODEL_PATH = TRAINED_MODELS_DIR / f"{MODEL_NAME}_best.pt"
+# ---------------------------------------------------------------------
+# Configuración del modelo usado por la aplicación web
+# ---------------------------------------------------------------------
+# Para usar LSTM en la app, cambiá este nombre por el checkpoint LSTM final.
+# Ejemplo:
+# MODEL_NAME = "M5_lstm_h128_l1_d0p2_holdout_sujeto"
+#
+# También se puede sobrescribir mediante variables de entorno:
+# LSA_MODEL_NAME
+# LSA_MODEL_PATH
+# LSA_MODEL_TYPE
+# ---------------------------------------------------------------------
+
+DEFAULT_MODEL_NAME = "M5_lstm_h128_l1_d0p2" #"abecedario_gru_v2"
+
+MODEL_NAME = os.getenv("LSA_MODEL_NAME", DEFAULT_MODEL_NAME)
+
+MODEL_PATH = Path(
+    os.getenv(
+        "LSA_MODEL_PATH",
+        str(TRAINED_MODELS_DIR / f"{MODEL_NAME}_best.pt"),
+    )
+)
 
 
 @dataclass(frozen=True)
@@ -39,22 +61,32 @@ class PredictionResult:
 
 class ModelRunner:
     """
-    Ejecuta inferencia del modelo GRU del abecedario LSA.
+    Ejecuta inferencia del modelo secuencial del abecedario LSA.
 
-    Entrada:
-        sequence: np.ndarray shape=(FRAMES_PER_VIDEO, FEATURES_PER_FRAME)
+    El runner soporta modelos recurrentes GRU y LSTM, siempre que ambos
+    mantengan la misma interfaz de entrada/salida:
 
-    Salida:
-        pred_label, confidence, top2_label, top2_confidence, top2_margin,
-        top_predictions.
+        Entrada:
+            sequence: np.ndarray shape=(FRAMES_PER_VIDEO, FEATURES_PER_FRAME)
+
+        Salida:
+            pred_label, confidence, top2_label, top2_confidence,
+            top2_margin y top_predictions.
+
+    La arquitectura concreta se determina a partir de la metadata del
+    checkpoint, de variables de entorno o del nombre del archivo.
     """
 
     def __init__(self, model_path: Path = MODEL_PATH):
         self.model_path = Path(model_path)
+
         self.device = None
-        self.model = None
+        self.model: torch.nn.Module | None = None
+
         self.labels: list[str] = []
         self.idx_to_label: dict[int, str] = {}
+
+        self.model_type: str | None = None
         self.model_loaded = False
         self.load_error: str | None = None
 
@@ -70,10 +102,19 @@ class ModelRunner:
             self.device = get_device()
             checkpoint = load_checkpoint(self.model_path, map_location=self.device)
 
-            metadata = checkpoint["metadata"]
+            metadata = checkpoint.get("metadata")
+            if metadata is None:
+                raise KeyError(
+                    "El checkpoint no contiene metadata. "
+                    "Se requiere metadata para reconstruir la arquitectura del modelo."
+                )
 
-            metadata_frames = int(metadata.get("frames_per_video", FRAMES_PER_VIDEO))
-            metadata_features = int(metadata.get("features_per_frame", FEATURES_PER_FRAME))
+            metadata_frames = int(
+                metadata.get("frames_per_video", FRAMES_PER_VIDEO)
+            )
+            metadata_features = int(
+                metadata.get("features_per_frame", FEATURES_PER_FRAME)
+            )
 
             if metadata_frames != FRAMES_PER_VIDEO:
                 raise ValueError(
@@ -99,16 +140,17 @@ class ModelRunner:
                 for label, idx in label_to_idx.items()
             }
 
-            self.model = GRUClassifier(
-                input_dim=FEATURES_PER_FRAME,
-                hidden_dim=int(metadata["hidden_dim"]),
-                num_classes=len(self.labels),
-                num_layers=int(metadata["num_layers"]),
-                dropout=float(metadata["dropout"]),
-                bidirectional=bool(metadata["bidirectional"]),
-            ).to(self.device)
+            self.model_type = self._resolve_model_type(metadata)
 
-            self.model.load_state_dict(checkpoint["model_state_dict"])
+            self.model = self._build_model_from_metadata(metadata).to(self.device)
+
+            state_dict = checkpoint.get("model_state_dict")
+            if state_dict is None:
+                raise KeyError(
+                    "El checkpoint no contiene 'model_state_dict'."
+                )
+
+            self.model.load_state_dict(state_dict)
             self.model.eval()
 
             self.model_loaded = True
@@ -118,6 +160,64 @@ class ModelRunner:
             self.model_loaded = False
             self.load_error = str(exc)
             self.model = None
+
+    def _resolve_model_type(self, metadata: dict) -> str:
+        """
+        Determina si el checkpoint debe cargarse como GRU o LSTM.
+
+        Prioridad:
+            1. Variable de entorno LSA_MODEL_TYPE.
+            2. Campo metadata["model_type"].
+            3. Nombre del archivo del checkpoint.
+            4. Fallback a "gru" por compatibilidad con checkpoints antiguos.
+        """
+        env_model_type = os.getenv("LSA_MODEL_TYPE")
+
+        if env_model_type:
+            model_type = env_model_type
+        else:
+            model_type = metadata.get("model_type")
+
+        if not model_type:
+            stem = self.model_path.stem.lower()
+
+            if "lstm" in stem:
+                model_type = "lstm"
+            elif "gru" in stem:
+                model_type = "gru"
+            else:
+                model_type = "gru"
+
+        model_type = str(model_type).lower().strip()
+
+        if model_type not in {"gru", "lstm"}:
+            raise ValueError(
+                f"Tipo de modelo no soportado: {model_type}. "
+                "Opciones válidas: 'gru' o 'lstm'."
+            )
+
+        return model_type
+
+    def _build_model_from_metadata(self, metadata: dict) -> torch.nn.Module:
+        if self.model_type is None:
+            raise RuntimeError("No se resolvió el tipo de modelo.")
+
+        model_class = {
+            "gru": GRUClassifier,
+            "lstm": LSTMClassifier,
+        }[self.model_type]
+
+        return model_class(
+            input_dim=FEATURES_PER_FRAME,
+            hidden_dim=int(metadata["hidden_dim"]),
+            num_classes=len(self.labels),
+            num_layers=int(metadata["num_layers"]),
+            dropout=float(metadata["dropout"]),
+            bidirectional=self._as_bool(metadata["bidirectional"]),
+            classifier_hidden_dim=int(
+                metadata.get("classifier_hidden_dim", 128)
+            ),
+        )
 
     def predict(self, sequence: np.ndarray, *, top_k: int = 5) -> PredictionResult:
         if not self.model_loaded or self.model is None:
@@ -208,3 +308,23 @@ class ModelRunner:
 
         if not np.all(np.isfinite(sequence)):
             raise ValueError("La secuencia contiene NaN o infinitos.")
+
+    @staticmethod
+    def _as_bool(value) -> bool:
+        if isinstance(value, bool):
+            return value
+
+        if isinstance(value, (int, float)):
+            return bool(value)
+
+        if isinstance(value, str):
+            return value.strip().lower() in {
+                "1",
+                "true",
+                "yes",
+                "y",
+                "si",
+                "sí",
+            }
+
+        return bool(value)

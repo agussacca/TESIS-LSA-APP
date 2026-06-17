@@ -1,3 +1,4 @@
+# free_spell_session.py
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -68,7 +69,7 @@ class FreeSpellSession:
         self.model_runner = ModelRunner()
         self.capture_buffer = CaptureBuffer()
 
-        self.label_to_hands = self._load_label_to_hands()
+        self.label_to_hands: dict[str, int] = self._load_label_to_hands()
 
         self.state = STATE_IDLE
         self.state_start_timestamp_ms: int | None = None
@@ -79,7 +80,7 @@ class FreeSpellSession:
         self.frame_index = 0
 
         self.spelled_text = ""
-        self.last_result: dict | None = None
+        self.last_result: dict[str, Any] | None = None
 
     def process_frame(
         self,
@@ -88,7 +89,7 @@ class FreeSpellSession:
         timestamp_ms: int,
         orientation: str | None = None,
         mirrored: bool | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         timestamp_ms = int(timestamp_ms)
 
         detection = self.detector_adapter.process_frame(
@@ -113,7 +114,7 @@ class FreeSpellSession:
             self.no_hand_counter = 0
 
         event = None
-        final_result = None
+        final_result: dict[str, Any] | None = None
 
         if self.state == STATE_IDLE:
             if self.hand_present_counter >= self.config.start_consecutive_frames:
@@ -158,7 +159,10 @@ class FreeSpellSession:
                 self.last_result = final_result
 
                 if final_result and final_result.get("accepted"):
-                    self.spelled_text += str(final_result["pred_label"])
+                    final_pred_label = final_result.get("pred_label")
+
+                    if isinstance(final_pred_label, str) and final_pred_label:
+                        self.spelled_text += final_pred_label
 
                 self.state = STATE_WAIT_RELEASE
                 self.state_start_timestamp_ms = timestamp_ms
@@ -209,7 +213,7 @@ class FreeSpellSession:
             "last_result": self.last_result,
         }
 
-    def _finalize_attempt(self) -> dict:
+    def _finalize_attempt(self) -> dict[str, Any]:
         captured_items = self.capture_buffer.to_legacy_captured_items()
         frames_captured = len(captured_items)
 
@@ -242,8 +246,69 @@ class FreeSpellSession:
         confidence = float(prediction.confidence or 0.0)
         top2_margin = float(prediction.top2_margin or 0.0)
 
+        if pred_label is None:
+            return {
+                "accepted": False,
+                "appended": False,
+                "quality_ok": False,
+                "quality_message": (
+                    prediction.error
+                    or "No se obtuvo una predicción válida del modelo."
+                ),
+                "base_quality_message": (
+                    prediction.error
+                    or "No se obtuvo una predicción válida del modelo."
+                ),
+                "base_quality_ok": False,
+
+                "pred_label": None,
+                "confidence": prediction.confidence,
+
+                "top2_label": prediction.top2_label,
+                "top2_confidence": prediction.top2_confidence,
+                "top2_margin": prediction.top2_margin,
+
+                "frames_captured": frames_captured,
+                "sampled_frames": sequence_result.stats.get("sampled_frames", 0),
+                "sequence_shape": tuple(sequence_result.sequence.shape),
+
+                "expected_hands_for_features": sequence_result.stats.get(
+                    "expected_hands_for_features"
+                ),
+                "expected_hands_estimated": sequence_result.stats.get(
+                    "expected_hands_estimated", 1
+                ),
+                "expected_hands_for_validation": None,
+
+                "hand_ratio_any": sequence_result.stats.get("hand_ratio_any", 0.0),
+                "hand_ratio_expected": sequence_result.stats.get(
+                    "hand_ratio_expected", 0.0
+                ),
+                "avg_detected_hands": sequence_result.stats.get(
+                    "avg_detected_hands", 0.0
+                ),
+                "two_hand_ratio": sequence_result.stats.get("two_hand_ratio", 0.0),
+                "pose_ratio": sequence_result.stats.get("pose_ratio", 0.0),
+                "face_anchor_ratio": sequence_result.stats.get(
+                    "face_anchor_ratio", 0.0
+                ),
+                "body_anchor_ratio": sequence_result.stats.get(
+                    "body_anchor_ratio", 0.0
+                ),
+
+                "dynamic": None,
+                "static": None,
+
+                "top_predictions": prediction.top_predictions,
+                "model_loaded": prediction.model_loaded,
+                "model_path": prediction.model_path,
+                "model_error": prediction.error,
+            }
+
+        candidate_label: str = pred_label
+
         base_quality_message, base_quality_ok = self._classify_capture_quality(
-            pred_label=pred_label,
+            pred_label=candidate_label,
             confidence=confidence,
             top2_margin=top2_margin,
             stats=sequence_result.stats,
@@ -251,14 +316,14 @@ class FreeSpellSession:
 
         expected_hands_for_validation = int(
             self.label_to_hands.get(
-                pred_label,
+                candidate_label,
                 int(sequence_result.stats.get("expected_hands_estimated", 1)),
             )
         )
 
         dynamic_result = validate_dynamic_gesture_from_captured_items(
             captured_items=captured_items,
-            label=pred_label,
+            label=candidate_label,
             expected_hands=expected_hands_for_validation,
         )
 
@@ -272,7 +337,7 @@ class FreeSpellSession:
 
         static_result = validate_static_gesture_from_captured_items(
             captured_items=captured_items,
-            label=pred_label,
+            label=candidate_label,
             expected_hands=expected_hands_for_validation,
         )
 
@@ -288,7 +353,7 @@ class FreeSpellSession:
         )
 
         return {
-            "pred_label": pred_label,
+            "pred_label": candidate_label,
             "confidence": confidence,
 
             "top2_label": prediction.top2_label,
@@ -315,8 +380,12 @@ class FreeSpellSession:
             "expected_hands_for_validation": expected_hands_for_validation,
 
             "hand_ratio_any": sequence_result.stats.get("hand_ratio_any", 0.0),
-            "hand_ratio_expected": sequence_result.stats.get("hand_ratio_expected", 0.0),
-            "avg_detected_hands": sequence_result.stats.get("avg_detected_hands", 0.0),
+            "hand_ratio_expected": sequence_result.stats.get(
+                "hand_ratio_expected", 0.0
+            ),
+            "avg_detected_hands": sequence_result.stats.get(
+                "avg_detected_hands", 0.0
+            ),
             "two_hand_ratio": sequence_result.stats.get("two_hand_ratio", 0.0),
             "pose_ratio": sequence_result.stats.get("pose_ratio", 0.0),
             "face_anchor_ratio": sequence_result.stats.get("face_anchor_ratio", 0.0),
@@ -331,14 +400,14 @@ class FreeSpellSession:
     def _classify_capture_quality(
         self,
         *,
-        pred_label: str | None,
+        pred_label: str,
         confidence: float,
         top2_margin: float,
-        stats: dict,
+        stats: dict[str, Any],
     ) -> tuple[str, bool]:
-        issues = []
+        issues: list[str] = []
 
-        required_hands = self.label_to_hands.get(pred_label) if pred_label else None
+        required_hands = self.label_to_hands.get(pred_label)
 
         if confidence < self.config.min_confidence:
             issues.append(
@@ -398,10 +467,14 @@ class FreeSpellSession:
         dynamic_result: Any,
         static_result: Any,
     ) -> bool:
-        if getattr(dynamic_result, "required", False) and not getattr(dynamic_result, "ok", True):
+        if getattr(dynamic_result, "required", False) and not getattr(
+            dynamic_result, "ok", True
+        ):
             return False
 
-        if getattr(static_result, "required", False) and not getattr(static_result, "ok", True):
+        if getattr(static_result, "required", False) and not getattr(
+            static_result, "ok", True
+        ):
             return False
 
         return bool(quality_ok or self.config.append_unreliable)
@@ -453,7 +526,7 @@ class FreeSpellSession:
         self._reset_to_idle()
         self.last_result = None
 
-    def _serialize_dynamic_result(self, result: Any) -> dict:
+    def _serialize_dynamic_result(self, result: Any) -> dict[str, Any]:
         return {
             "required": result.required,
             "ok": result.ok,
@@ -468,7 +541,7 @@ class FreeSpellSession:
             "reasons": result.reasons or [],
         }
 
-    def _serialize_static_result(self, result: Any) -> dict:
+    def _serialize_static_result(self, result: Any) -> dict[str, Any]:
         return {
             "required": result.required,
             "ok": result.ok,

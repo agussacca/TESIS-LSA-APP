@@ -1,3 +1,4 @@
+#sequence_builder.py
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -57,8 +58,12 @@ def estimate_expected_hands(info_list) -> int:
 
 class SequenceBuilder:
     """
-    Construye una secuencia fija para el modelo GRU a partir de todos los
-    captured_items del intento.
+    Construye una secuencia fija para el modelo secuencial de reconocimiento
+    a partir de todos los captured_items del intento.
+
+    La salida es compatible con modelos recurrentes GRU o LSTM, siempre que
+    hayan sido entrenados con la misma cantidad de frames, la misma cantidad
+    de features por frame y el mismo procedimiento de normalización.
 
     Entrada:
         captured_items completos del intento/segmento.
