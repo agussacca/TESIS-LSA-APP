@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -15,14 +17,12 @@ except Exception:  # pragma: no cover
 
 from app.db.database import SessionLocal, init_db
 from app.db.seed import sembrar_datos_iniciales
-from app.routers.resultados_practica import router as resultados_practica_router
 from app.routers.auth import router as auth_router
+from app.routers.resultados_practica import router as resultados_practica_router
 
-app = FastAPI(title=settings.app_name)
 
-
-@app.on_event("startup")
-def on_startup() -> None:
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     init_db()
     db = SessionLocal()
     try:
@@ -30,6 +30,10 @@ def on_startup() -> None:
     finally:
         db.close()
 
+    yield
+
+
+app = FastAPI(title=settings.app_name, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

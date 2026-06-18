@@ -7,13 +7,29 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies / build
 node_modules
 dist
 dist-ssr
 *.local
+
+# Python
 .venv
+venv
 __pycache__
+*.py[cod]
+.pytest_cache
+
+# SQLite runtime databases
+*.db
+*.db-shm
+*.db-wal
+backend/lsa_app.db
+backend/lsa_app.db-shm
+backend/lsa_app.db-wal
 lsa_app.db
+lsa_app.db-shm
+lsa_app.db-wal
 
 # Editor directories and files
 .vscode/*
@@ -26,12 +42,6 @@ lsa_app.db
 *.sln
 *.sw?
 
-.gitignore
+# Local packaged backups
 frontend.rar
 backend.rar
-backend/lsa_app.db
-backend/lsa_app.db-shm
-backend/lsa_app.db-wal
-*.db
-*.db-shm
-*.db-wal
