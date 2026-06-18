@@ -47,6 +47,24 @@ def obtener_sesion_actual(usuario: models.Usuario = Depends(get_current_user), d
     }
 
 
+@router.patch("/me")
+def actualizar_perfil_actual(
+    data: schemas.UsuarioPerfilActualizar,
+    usuario: models.Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    usuario_actualizado = crud.actualizar_perfil_usuario(db, usuario.id_usuario, data)
+    token = create_access_token(
+        subject=usuario_actualizado["id_usuario"],
+        extra_claims={"email": usuario_actualizado["email"]},
+    )
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "usuario": usuario_actualizado,
+    }
+
+
 @router.post("/logout")
 def cerrar_sesion():
     # Con JWT sin tabla de sesiones, cerrar sesión consiste en eliminar el token del cliente.

@@ -27,7 +27,7 @@ import {
   obtenerTitulos,
   equiparPerfil,
 } from "./services/progressApi";
-import { cerrarSesion, iniciarSesion, obtenerSesionActual, registrarUsuario } from "./services/authApi";
+import { actualizarPerfilUsuario, cerrarSesion, iniciarSesion, obtenerSesionActual, registrarUsuario } from "./services/authApi";
 import GuidedSpellPanel from "./components/practice/GuidedSpellPanel";
 import FreeSpellPanel from "./components/practice/FreeSpellPanel";
 
@@ -202,6 +202,25 @@ export default function App() {
     setUsuarioId(id);
     await refreshUserData(id);
     setScreen("home");
+  }
+
+
+  async function updateAuthenticatedProfile(patch) {
+    const data = await actualizarPerfilUsuario(patch);
+    const usuario = data?.usuario;
+
+    if (!usuario) {
+      return null;
+    }
+
+    setProfileData((prev) => ({
+      ...prev,
+      name: usuario.nombre_visible || prev.name,
+      email: usuario.email || prev.email,
+      photo: usuario.foto_perfil_url || prev.photo,
+    }));
+
+    return usuario;
   }
 
   function enterAsGuest() {
@@ -524,6 +543,7 @@ export default function App() {
             isGuest={isGuest}
             profileData={profileData}
             setProfileData={setProfileData}
+            onUpdateProfile={updateAuthenticatedProfile}
             usuarioId={usuarioId}
             userProgress={userProgress}
             onBack={goHome}
@@ -2742,9 +2762,13 @@ function NameDropArea({ value, onDropName, slotId }) {
   );
 }
 
-function ProfileScreen({ isGuest, profileData, setProfileData, usuarioId, userProgress, onBack, onStats, onAchievements }) {
+function ProfileScreen({ isGuest, profileData, setProfileData, onUpdateProfile, usuarioId, userProgress, onBack, onStats, onAchievements }) {
   const [editingField, setEditingField] = useState(null);
   const [draftValue, setDraftValue] = useState("");
+  const [draftPassword, setDraftPassword] = useState("");
+  const [draftPasswordConfirm, setDraftPasswordConfirm] = useState("");
+  const [profileError, setProfileError] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
   const [customizerOpen, setCustomizerOpen] = useState(false);
   const [customizerTab, setCustomizerTab] = useState("frames");
 
@@ -2842,26 +2866,87 @@ function ProfileScreen({ isGuest, profileData, setProfileData, usuarioId, userPr
 
   const selectedFrame = frameFromProfileData(profileData);
 
-  function startEditing(field, value) {
+  function startEditing(field, value = "") {
+    setProfileError("");
     setEditingField(field);
     setDraftValue(value);
+    setDraftPassword("");
+    setDraftPasswordConfirm("");
   }
 
-  function saveField() {
+  async function saveField() {
     if (!editingField) return;
 
-    setProfileData((prev) => ({
-      ...prev,
-      [editingField]: draftValue,
-    }));
+    const normalizedValue = String(draftValue || "").trim();
 
-    setEditingField(null);
-    setDraftValue("");
+    if (editingField === "name" && !normalizedValue) {
+      setProfileError("El nombre no puede quedar vacío.");
+      return;
+    }
+
+    if (editingField === "email") {
+      const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+      if (!normalizedValue) {
+        setProfileError("El correo electrónico no puede quedar vacío.");
+        return;
+      }
+      if (!emailPattern.test(normalizedValue)) {
+        setProfileError("El correo electrónico no tiene un formato válido.");
+        return;
+      }
+    }
+
+    if (editingField === "password") {
+      if (!draftPassword) {
+        setProfileError("Ingresá la nueva contraseña.");
+        return;
+      }
+      if (draftPassword.length < 8) {
+        setProfileError("La contraseña debe tener al menos 8 caracteres.");
+        return;
+      }
+      if (!draftPasswordConfirm) {
+        setProfileError("Confirmá la nueva contraseña.");
+        return;
+      }
+      if (draftPassword !== draftPasswordConfirm) {
+        setProfileError("Las contraseñas no coinciden.");
+        return;
+      }
+    }
+
+    setProfileSaving(true);
+    setProfileError("");
+
+    try {
+      if (editingField === "name") {
+        await onUpdateProfile?.({ nombre_visible: normalizedValue });
+      }
+
+      if (editingField === "email") {
+        await onUpdateProfile?.({ email: normalizedValue.toLowerCase() });
+      }
+
+      if (editingField === "password") {
+        await onUpdateProfile?.({ password: draftPassword });
+      }
+
+      setEditingField(null);
+      setDraftValue("");
+      setDraftPassword("");
+      setDraftPasswordConfirm("");
+    } catch (error) {
+      setProfileError(error.message || "No se pudieron guardar los cambios del perfil.");
+    } finally {
+      setProfileSaving(false);
+    }
   }
 
   function cancelEditing() {
     setEditingField(null);
     setDraftValue("");
+    setDraftPassword("");
+    setDraftPasswordConfirm("");
   }
 
   function openCustomizer(tab) {
@@ -2925,11 +3010,13 @@ function ProfileScreen({ isGuest, profileData, setProfileData, usuarioId, userPr
           <div className="section-heading compact">
             <div>
               <h3>Datos del usuario</h3>
-              <p>Los campos pueden editarse individualmente.</p>
+              <p>Actualizá tu nombre, correo electrónico, contraseña y foto de perfil.</p>
             </div>
           </div>
 
           <div className="profile-detail-list">
+            {profileError && <p className="auth-error">{profileError}</p>}
+
             <EditableFieldRow
               label="Nombre"
               value={profileData.name}
@@ -2939,6 +3026,7 @@ function ProfileScreen({ isGuest, profileData, setProfileData, usuarioId, userPr
               onChange={setDraftValue}
               onSave={saveField}
               onCancel={cancelEditing}
+              saving={profileSaving}
             />
 
             <EditableFieldRow
@@ -2950,17 +3038,20 @@ function ProfileScreen({ isGuest, profileData, setProfileData, usuarioId, userPr
               onChange={setDraftValue}
               onSave={saveField}
               onCancel={cancelEditing}
+              saving={profileSaving}
+              inputType="email"
             />
 
-            <EditableFieldRow
-              label="Teléfono"
-              value={profileData.phone}
-              isEditing={editingField === "phone"}
-              draftValue={draftValue}
-              onEdit={() => startEditing("phone", profileData.phone)}
-              onChange={setDraftValue}
+            <EditablePasswordRow
+              isEditing={editingField === "password"}
+              passwordValue={draftPassword}
+              confirmValue={draftPasswordConfirm}
+              onEdit={() => startEditing("password")}
+              onPasswordChange={setDraftPassword}
+              onConfirmChange={setDraftPasswordConfirm}
               onSave={saveField}
               onCancel={cancelEditing}
+              saving={profileSaving}
             />
           </div>
         </section>
@@ -3029,6 +3120,7 @@ function ProfileScreen({ isGuest, profileData, setProfileData, usuarioId, userPr
           setProfileData={setProfileData}
           selectedFrame={selectedFrame}
           usuarioId={usuarioId}
+          onUpdateProfile={onUpdateProfile}
           activeTab={customizerTab}
           setActiveTab={setCustomizerTab}
           onClose={() => setCustomizerOpen(false)}
@@ -3047,6 +3139,9 @@ function EditableFieldRow({
   onChange,
   onSave,
   onCancel,
+  readOnly = false,
+  saving = false,
+  inputType = "text",
 }) {
   return (
     <div className="profile-detail-row">
@@ -3057,17 +3152,78 @@ function EditableFieldRow({
           <strong>{value}</strong>
         ) : (
           <div className="profile-inline-edit">
-            <input value={draftValue} onChange={(e) => onChange(e.target.value)} />
+            <input
+              type={inputType}
+              value={draftValue}
+              onChange={(e) => onChange(e.target.value)}
+            />
             <div className="profile-inline-actions">
-              <button className="mini-save" onClick={onSave}>Guardar</button>
-              <button className="mini-cancel" onClick={onCancel}>Cancelar</button>
+              <button className="mini-save" onClick={onSave} disabled={saving}>
+                {saving ? "Guardando..." : "Guardar"}
+              </button>
+              <button className="mini-cancel" onClick={onCancel} disabled={saving}>Cancelar</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {!isEditing && !readOnly && (
+        <button className="detail-edit-button" onClick={onEdit} title={`Editar ${label}`}>
+          ✎
+        </button>
+      )}
+    </div>
+  );
+}
+
+function EditablePasswordRow({
+  isEditing,
+  passwordValue,
+  confirmValue,
+  onEdit,
+  onPasswordChange,
+  onConfirmChange,
+  onSave,
+  onCancel,
+  saving = false,
+}) {
+  return (
+    <div className="profile-detail-row">
+      <div className="profile-detail-info">
+        <span>Contraseña</span>
+
+        {!isEditing ? (
+          <strong>••••••••</strong>
+        ) : (
+          <div className="profile-inline-edit profile-password-edit">
+            <input
+              type="password"
+              value={passwordValue}
+              onChange={(event) => onPasswordChange(event.target.value)}
+              placeholder="Nueva contraseña"
+              autoComplete="new-password"
+            />
+            <input
+              type="password"
+              value={confirmValue}
+              onChange={(event) => onConfirmChange(event.target.value)}
+              placeholder="Confirmar contraseña"
+              autoComplete="new-password"
+            />
+            <div className="profile-inline-actions">
+              <button className="mini-save" onClick={onSave} disabled={saving}>
+                {saving ? "Guardando..." : "Guardar"}
+              </button>
+              <button className="mini-cancel" onClick={onCancel} disabled={saving}>
+                Cancelar
+              </button>
             </div>
           </div>
         )}
       </div>
 
       {!isEditing && (
-        <button className="detail-edit-button" onClick={onEdit} title={`Editar ${label}`}>
+        <button className="detail-edit-button" onClick={onEdit} title="Editar contraseña">
           ✎
         </button>
       )}
@@ -3082,6 +3238,7 @@ function IdentityCustomizationModal({
   activeTab,
   setActiveTab,
   usuarioId,
+  onUpdateProfile,
   onClose,
 }) {
   const [sourcePhoto, setSourcePhoto] = useState(null);
@@ -3158,6 +3315,20 @@ function IdentityCustomizationModal({
       console.warn("No se pudo guardar la personalización del perfil:", error);
     }
   }
+
+  async function persistPhoto(nextPhoto) {
+    setProfileData((prev) => ({
+      ...prev,
+      photo: nextPhoto,
+    }));
+
+    try {
+      await onUpdateProfile?.({ foto_perfil_url: nextPhoto });
+    } catch (error) {
+      console.warn("No se pudo guardar la foto de perfil:", error);
+    }
+  }
+
 
   function selectFrame(frame) {
     const currentTitle = availableTitleOptions.find((title) => title.dbId === profileData.titleDbId || title.name === profileData.title) || availableTitleOptions[0];
@@ -3254,7 +3425,7 @@ function IdentityCustomizationModal({
       ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
       ctx.restore();
 
-      setProfileData((prev) => ({ ...prev, photo: canvas.toDataURL("image/png") }));
+      persistPhoto(canvas.toDataURL("image/png"));
     };
     img.src = sourcePhoto;
   }
@@ -3412,12 +3583,7 @@ function IdentityCustomizationModal({
                     <button
                       key={photo.id}
                       className={`photo-option ${profileData.photo === photo.label ? "selected" : ""}`}
-                      onClick={() =>
-                        setProfileData((prev) => ({
-                          ...prev,
-                          photo: photo.label,
-                        }))
-                      }
+                      onClick={() => persistPhoto(photo.label)}
                     >
                       {photo.label}
                     </button>

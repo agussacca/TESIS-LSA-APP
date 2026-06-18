@@ -37,6 +37,42 @@ class UsuarioCrear(BaseModel):
         return value
 
 
+class UsuarioPerfilActualizar(BaseModel):
+    nombre_visible: str | None = None
+    foto_perfil_url: str | None = None
+    email: str | None = None
+    password: str | None = None
+
+    @field_validator("nombre_visible")
+    @classmethod
+    def validar_nombre_visible_opcional(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        value = value.strip()
+        if not value:
+            raise ValueError("El nombre visible es obligatorio.")
+        return value
+
+    @field_validator("email")
+    @classmethod
+    def validar_email_opcional(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        value = value.strip().lower()
+        if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", value):
+            raise ValueError("El correo electrónico no tiene un formato válido.")
+        return value
+
+    @field_validator("password")
+    @classmethod
+    def validar_password_opcional(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        if len(value) < 8:
+            raise ValueError("La contraseña debe tener al menos 8 caracteres.")
+        return value
+
+
 class UsuarioLogin(BaseModel):
     email: str
     password: str

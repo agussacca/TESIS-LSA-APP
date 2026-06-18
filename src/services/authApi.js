@@ -99,6 +99,23 @@ export async function obtenerSesionActual() {
   return requestJson("/api/auth/me");
 }
 
+
+export async function actualizarPerfilUsuario(payload) {
+  const data = await requestJson("/api/auth/me", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+
+  if (data?.usuario) {
+    setAuthSession({
+      token: data.access_token || getAuthToken(),
+      usuario: data.usuario,
+    });
+  }
+
+  return data;
+}
+
 export async function cerrarSesion() {
   try {
     await requestJson("/api/auth/logout", { method: "POST" });

@@ -310,6 +310,35 @@ def consultar_usuario_registrado(db: Session, usuario_id: int) -> dict[str, Any]
     return _serializar_usuario_basico(usuario)
 
 
+def actualizar_perfil_usuario(
+    db: Session,
+    usuario_id: int,
+    data: schemas.UsuarioPerfilActualizar,
+) -> dict[str, Any]:
+    usuario = obtener_usuario_o_404(db, usuario_id)
+
+    if data.nombre_visible is not None:
+        usuario.nombre_visible = data.nombre_visible
+
+    if data.foto_perfil_url is not None:
+        usuario.foto_perfil_url = data.foto_perfil_url
+
+    if data.email is not None:
+        email_normalizado = data.email.strip().lower()
+        usuario_existente = obtener_usuario_por_email(db, email_normalizado)
+        if usuario_existente is not None and usuario_existente.id_usuario != usuario.id_usuario:
+            raise HTTPException(status_code=400, detail="Ya existe un usuario registrado con ese correo electrónico.")
+        usuario.email = email_normalizado
+
+    if data.password is not None:
+        usuario.password_hash = hash_password(data.password)
+
+    db.add(usuario)
+    db.commit()
+    db.refresh(usuario)
+    return _serializar_usuario_basico(usuario)
+
+
 def obtener_panel_usuario(db: Session, usuario_id: int) -> dict[str, Any]:
     usuario = obtener_usuario_o_404(db, usuario_id)
     intentos = listar_intentos_usuario(db, usuario_id)
