@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.db import models
+from app.core.security import hash_password
 
 
 CATEGORIAS_INICIALES = [
@@ -231,12 +232,15 @@ def _sembrar_usuario_demo(db: Session) -> None:
     if usuario is None:
         usuario = models.Usuario(
             email="juan@senapp.test",
-            password_hash="demo",
+            password_hash=hash_password("password123"),
             nombre_visible="Juan González",
             foto_perfil_url=None,
         )
         db.add(usuario)
         db.flush()
+
+    if usuario.password_hash == "demo" or not str(usuario.password_hash or "").startswith("pbkdf2_sha256$"):
+        usuario.password_hash = hash_password("password123")
 
     if usuario.marco_equipado_id is None:
         marco = db.query(models.Marco).filter(models.Marco.nombre == "Fuego").first()

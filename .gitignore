@@ -29,4 +29,9 @@ lsa_app.db
 .gitignore
 frontend.rar
 backend.rar
-lsa_app.db
+backend/lsa_app.db
+backend/lsa_app.db-shm
+backend/lsa_app.db-wal
+*.db
+*.db-shm
+*.db-wal

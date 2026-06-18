@@ -37,6 +37,32 @@ class UsuarioCrear(BaseModel):
         return value
 
 
+class UsuarioLogin(BaseModel):
+    email: str
+    password: str
+
+    @field_validator("email")
+    @classmethod
+    def validar_email(cls, value: str) -> str:
+        value = (value or "").strip().lower()
+        if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", value):
+            raise ValueError("El correo electrónico no tiene un formato válido.")
+        return value
+
+    @field_validator("password")
+    @classmethod
+    def validar_password(cls, value: str) -> str:
+        if not value:
+            raise ValueError("La contraseña es obligatoria.")
+        return value
+
+
+class AuthTokenRespuesta(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    usuario: "UsuarioRespuesta"
+
+
 class UsuarioActualizar(BaseModel):
     usuario_id: int
     email: str | None = None
@@ -190,3 +216,9 @@ class TituloRespuesta(BaseModel):
     nivel_requerido: int
     orden: int
     disponible: bool | None = None
+
+
+try:
+    AuthTokenRespuesta.model_rebuild()
+except Exception:
+    pass

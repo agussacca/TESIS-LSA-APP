@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import BackendDiagnostics from "./components/dev/BackendDiagnostics";
 import CameraView from "./components/camera/CameraView";
 import "./App.css";
+import "./auth.css";
 
 import { getHealth } from "./services/apiClient";
 import { useRecognitionSocket } from "./hooks/useRecognitionSocket";
@@ -13,9 +14,8 @@ import EvaluatePracticePanel from "./components/practice/EvaluatePracticePanel";
 import EvaluateDiagnostics from "./components/dev/EvaluateDiagnostics";
 import PracticeProgressPanel from "./components/progress/PracticeProgressPanel";
 import UserPanelSummary from "./components/progress/UserPanelSummary";
-import { getRegisteredUserId, setRegisteredUserId } from "./utils/guestUser";
+import { clearAuthSession, getAuthToken, getAuthUserId, setAuthSession } from "./utils/authSession";
 import {
-  asegurarUsuarioRegistradoDemo,
   obtenerUsuarioRegistrado,
   obtenerPanelUsuario,
   obtenerObjetivosUsuario,
@@ -27,6 +27,7 @@ import {
   obtenerTitulos,
   equiparPerfil,
 } from "./services/progressApi";
+import { cerrarSesion, iniciarSesion, obtenerSesionActual, registrarUsuario } from "./services/authApi";
 import GuidedSpellPanel from "./components/practice/GuidedSpellPanel";
 import FreeSpellPanel from "./components/practice/FreeSpellPanel";
 
@@ -89,7 +90,7 @@ const PROFILE_PHOTOS = [
 export default function App() {
   const [screen, setScreen] = useState("access");
   const [isGuest, setIsGuest] = useState(false);
-  const [usuarioId, setUsuarioId] = useState(() => getRegisteredUserId());
+  const [usuarioId, setUsuarioId] = useState(() => getAuthUserId());
   const [activeCategory, setActiveCategory] = useState(null);
   const [categoryModal, setCategoryModal] = useState(null);
   const [selectedPreview, setSelectedPreview] = useState(null);
@@ -130,30 +131,95 @@ export default function App() {
       .catch((error) => setBackendStatus({ status: "error", message: error.message }));
   }, []);
 
-  async function enterAsUser() {
-    setIsGuest(false);
 
-    try {
-      const id = await asegurarUsuarioRegistradoDemo({
-        email: profileData.email || "juan@senapp.test",
-        password: "password123",
-        nombre_visible: profileData.name || "Juan González",
-        foto_perfil_url: isImagePhoto(profileData.photo) ? profileData.photo : null,
-      });
+  useEffect(() => {
+    let cancelled = false;
 
-      setRegisteredUserId(id);
-      setUsuarioId(id);
-      await refreshUserData(id);
-    } catch (error) {
-      console.warn("No se pudo inicializar el usuario registrado:", error);
+    async function restoreAuthenticatedSession() {
+      if (!getAuthToken()) return;
+
+      try {
+        const data = await obtenerSesionActual();
+        if (cancelled) return;
+
+        const usuario = data.usuario;
+        const id = Number(usuario?.id_usuario ?? usuario?.id);
+        if (!Number.isFinite(id) || id <= 0) {
+          clearAuthSession();
+          return;
+        }
+
+        setAuthSession({ token: getAuthToken(), usuario });
+        setIsGuest(false);
+        setUsuarioId(id);
+        await refreshUserData(id);
+        if (!cancelled) {
+          setScreen("home");
+        }
+      } catch (error) {
+        console.warn("No se pudo restaurar la sesión:", error);
+        clearAuthSession();
+        if (!cancelled) {
+          setUsuarioId(null);
+        }
+      }
     }
 
+    restoreAuthenticatedSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function enterAsUser(credentials) {
+    const data = await iniciarSesion(credentials);
+    const usuario = data.usuario;
+    const id = Number(usuario?.id_usuario ?? usuario?.id);
+
+    if (!Number.isFinite(id) || id <= 0) {
+      throw new Error("No se pudo identificar al usuario autenticado.");
+    }
+
+    setAuthSession({ token: data.access_token, usuario });
+    setIsGuest(false);
+    setUsuarioId(id);
+    await refreshUserData(id);
+    setScreen("home");
+  }
+
+  async function registerAsUser(payload) {
+    const data = await registrarUsuario(payload);
+    const usuario = data.usuario;
+    const id = Number(usuario?.id_usuario ?? usuario?.id);
+
+    if (!Number.isFinite(id) || id <= 0) {
+      throw new Error("No se pudo identificar al usuario registrado.");
+    }
+
+    setAuthSession({ token: data.access_token, usuario });
+    setIsGuest(false);
+    setUsuarioId(id);
+    await refreshUserData(id);
     setScreen("home");
   }
 
   function enterAsGuest() {
+    clearAuthSession();
+    setUsuarioId(null);
     setIsGuest(true);
+    setUserProgress(normalizeGamificationProgress(null));
     setScreen("home");
+  }
+
+  async function logout() {
+    await cerrarSesion();
+    clearAuthSession();
+    setUsuarioId(null);
+    setIsGuest(false);
+    setProfileData(DEFAULT_PROFILE_DATA);
+    setUserProgress(normalizeGamificationProgress(null));
+    setScreen("access");
   }
 
   function openCategory(category) {
@@ -344,7 +410,37 @@ export default function App() {
   }, []);
 
   if (screen === "access") {
-    return <AccessScreen onLogin={enterAsUser} onGuest={enterAsGuest} />;
+    return (
+      <AccessScreen
+        onLogin={() => setScreen("login")}
+        onRegister={() => setScreen("register")}
+        onGuest={enterAsGuest}
+      />
+    );
+  }
+
+  if (screen === "login") {
+    return (
+      <AuthScreen
+        mode="login"
+        onSubmit={enterAsUser}
+        onBack={() => setScreen("access")}
+        onGuest={enterAsGuest}
+        onSwitchMode={() => setScreen("register")}
+      />
+    );
+  }
+
+  if (screen === "register") {
+    return (
+      <AuthScreen
+        mode="register"
+        onSubmit={registerAsUser}
+        onBack={() => setScreen("access")}
+        onGuest={enterAsGuest}
+        onSwitchMode={() => setScreen("login")}
+      />
+    );
   }
 
   return (
@@ -359,7 +455,7 @@ export default function App() {
           setDetailsReturnScreen("home");
           setScreen("stats");
         }}
-        onLogout={() => setScreen("access")}
+        onLogout={logout}
       />
 
       {/*<BackendDiagnostics />
@@ -487,9 +583,9 @@ export default function App() {
   );
 }
 
-function AccessScreen({ onLogin, onGuest }) {
+function AccessScreen({ onLogin, onRegister, onGuest }) {
   return (
-    <div className="access-screen">
+    <div className="access-screen access-landing-screen">
       <section className="access-content fade-up">
         <div className="tag">Aprendizaje inicial de LSA</div>
         <h1>Aprendé señas con videos, cámara y desafíos.</h1>
@@ -499,9 +595,15 @@ function AccessScreen({ onLogin, onGuest }) {
         </p>
 
         <div className="access-buttons">
-          <button className="primary" onClick={onLogin}>Iniciar sesión</button>
-          <button className="secondary" onClick={onLogin}>Registrarme</button>
-          <button className="ghost" onClick={onGuest}>Ingresar como invitado</button>
+          <button type="button" className="primary" onClick={onLogin}>
+            Iniciar sesión
+          </button>
+          <button type="button" className="secondary" onClick={onRegister}>
+            Registrarme
+          </button>
+          <button type="button" className="ghost" onClick={onGuest}>
+            Ingresar como invitado
+          </button>
         </div>
 
         <small>
@@ -514,6 +616,160 @@ function AccessScreen({ onLogin, onGuest }) {
         <Feature title="Práctica con cámara" text="Realizá señas del Abecedario y recibí una devolución." icon="📷" />
         <Feature title="Tarjetas de aprendizaje" text="Consultá descripción, imagen y video demostrativo." icon="🃏" />
         <Feature title="Desafíos interactivos" text="Completá rondas con selección, arrastre, frases y mapas." icon="🎮" />
+      </section>
+    </div>
+  );
+}
+
+function AuthScreen({ mode, onSubmit, onBack, onGuest, onSwitchMode }) {
+  const isRegister = mode === "register";
+  const [nombreVisible, setNombreVisible] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setErrorMessage("");
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedName = nombreVisible.trim();
+
+    if (isRegister && !normalizedName) {
+      setErrorMessage("Ingresá tu nombre.");
+      return;
+    }
+
+    if (!normalizedEmail) {
+      setErrorMessage("Ingresá tu correo electrónico.");
+      return;
+    }
+
+    if (!password) {
+      setErrorMessage("Ingresá tu contraseña.");
+      return;
+    }
+
+    if (isRegister && password.length < 8) {
+      setErrorMessage("La contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
+
+    if (isRegister && !confirmPassword) {
+      setErrorMessage("Confirmá tu contraseña.");
+      return;
+    }
+
+    if (isRegister && password !== confirmPassword) {
+      setErrorMessage("Las contraseñas no coinciden.");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      if (isRegister) {
+        await onSubmit({
+          email: normalizedEmail,
+          password,
+          nombre_visible: normalizedName,
+          foto_perfil_url: null,
+        });
+      } else {
+        await onSubmit({ email: normalizedEmail, password });
+      }
+    } catch (error) {
+      setErrorMessage(error.message || "No se pudo completar la operación.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="auth-standalone-screen fade-up">
+      <section className="auth-standalone-card">
+        <div className="auth-standalone-icon" aria-hidden="true">
+          {isRegister ? "👥" : "🔐"}
+        </div>
+
+        <div className="auth-standalone-copy">
+          <h1>{isRegister ? "Crear cuenta" : "Iniciar sesión"}</h1>
+          <p>
+            {isRegister
+              ? "Completá tus datos para guardar el avance en la plataforma."
+              : "Ingresá con tu cuenta para recuperar tu progreso, logros y personalización."}
+          </p>
+        </div>
+
+        <form className="auth-standalone-form" onSubmit={handleSubmit} noValidate>
+          {isRegister && (
+            <label className="auth-field">
+              <span>Nombre</span>
+              <input
+                value={nombreVisible}
+                onChange={(event) => setNombreVisible(event.target.value)}
+                placeholder="Tu nombre"
+                autoComplete="name"
+                disabled={submitting}
+              />
+            </label>
+          )}
+
+          <label className="auth-field">
+            <span>Correo electrónico</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="usuario@mail.com"
+              autoComplete="email"
+              disabled={submitting}
+            />
+          </label>
+
+          <label className="auth-field">
+            <span>Contraseña</span>
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder={isRegister ? "Mínimo 8 caracteres" : "Tu contraseña"}
+              autoComplete={isRegister ? "new-password" : "current-password"}
+              disabled={submitting}
+            />
+          </label>
+
+          {isRegister && (
+            <label className="auth-field">
+              <span>Confirmar contraseña</span>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                placeholder="Repetí tu contraseña"
+                autoComplete="new-password"
+                disabled={submitting}
+              />
+            </label>
+          )}
+
+          {errorMessage && <p className="auth-error">{errorMessage}</p>}
+
+          <button className="primary auth-submit auth-submit-block" type="submit" disabled={submitting}>
+            {submitting ? "Procesando..." : isRegister ? "Registrarme" : "Entrar"}
+          </button>
+        </form>
+
+        <div className="auth-standalone-footer">
+          <button type="button" className="auth-inline-link" onClick={onSwitchMode} disabled={submitting}>
+            {isRegister ? "Ya tengo cuenta" : "Crear una cuenta"}
+          </button>
+          <button type="button" className="auth-inline-link auth-back-bottom" onClick={onBack} disabled={submitting}>
+            Volver al acceso
+          </button>
+        </div>
       </section>
     </div>
   );
@@ -564,8 +820,8 @@ function Header({ isGuest, profileData, userProgress, onHome, onProfile, onStats
             {isGuest ? (
               <>
                 <button onClick={onStats}>Ver estadísticas</button>
-                <button>Iniciar sesión</button>
-                <button>Registrarme</button>
+                <button onClick={onLogout}>Iniciar sesión</button>
+                <button onClick={onLogout}>Registrarme</button>
               </>
             ) : (
               <>

@@ -16,6 +16,7 @@ except Exception:  # pragma: no cover
 from app.db.database import SessionLocal, init_db
 from app.db.seed import sembrar_datos_iniciales
 from app.routers.resultados_practica import router as resultados_practica_router
+from app.routers.auth import router as auth_router
 
 app = FastAPI(title=settings.app_name)
 
@@ -66,6 +67,7 @@ try:
 except Exception:
     pass
 
+app.include_router(auth_router)
 app.include_router(resultados_practica_router)
 
 

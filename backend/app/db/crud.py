@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
 
 from app.db import models, schemas
+from app.core.security import hash_password, verify_password
 from app.services.estadisticas import (
     agrupar_progreso_por_letra,
     calcular_resumen_estadisticas,
@@ -106,14 +107,58 @@ def obtener_usuario_o_404(db: Session, usuario_id: int) -> models.Usuario:
     return usuario
 
 
+def obtener_usuario_por_email(db: Session, email: str) -> models.Usuario | None:
+    email_normalizado = str(email or "").strip().lower()
+    if not email_normalizado:
+        return None
+    return db.query(models.Usuario).filter(models.Usuario.email == email_normalizado).first()
+
+
+def crear_usuario_registrado(db: Session, data: schemas.UsuarioCrear) -> models.Usuario:
+    usuario_existente = obtener_usuario_por_email(db, data.email)
+    if usuario_existente is not None:
+        raise HTTPException(status_code=400, detail="Ya existe un usuario registrado con ese correo electrónico.")
+
+    usuario = models.Usuario(
+        email=data.email,
+        password_hash=hash_password(data.password),
+        nombre_visible=data.nombre_visible,
+        foto_perfil_url=data.foto_perfil_url,
+    )
+    db.add(usuario)
+    db.flush()
+
+    progreso = models.ProgresoUsuario(usuario_id=usuario.id_usuario)
+    db.add(progreso)
+    db.commit()
+    db.refresh(usuario)
+    return usuario
+
+
+def autenticar_usuario(db: Session, email: str, password: str) -> models.Usuario | None:
+    usuario = obtener_usuario_por_email(db, email)
+    if usuario is None:
+        return None
+    if not verify_password(password, usuario.password_hash):
+        return None
+
+    # Si el usuario venía de una versión anterior con contraseña plana, migrar a hash.
+    if not str(usuario.password_hash or "").startswith("pbkdf2_sha256$"):
+        usuario.password_hash = hash_password(password)
+        db.add(usuario)
+        db.commit()
+        db.refresh(usuario)
+    return usuario
+
+
 def crear_usuario(db: Session, data: schemas.UsuarioCrear) -> models.Usuario:
-    usuario_existente = db.query(models.Usuario).filter(models.Usuario.email == data.email).first()
+    usuario_existente = obtener_usuario_por_email(db, data.email)
     if usuario_existente is not None:
         return usuario_existente
 
     usuario = models.Usuario(
         email=data.email,
-        password_hash=data.password,
+        password_hash=hash_password(data.password),
         nombre_visible=data.nombre_visible,
         foto_perfil_url=data.foto_perfil_url,
     )

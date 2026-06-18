@@ -1,4 +1,6 @@
 // progressApi.js
+import { getAuthToken } from "../utils/authSession";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
 function buildUrl(path) {
@@ -6,7 +8,21 @@ function buildUrl(path) {
 }
 
 async function requestJson(path, options = {}) {
-  const response = await fetch(buildUrl(path), options);
+  const headers = new Headers(options.headers || {});
+
+  if (options.body && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const token = getAuthToken();
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  const response = await fetch(buildUrl(path), {
+    ...options,
+    headers,
+  });
 
   if (!response.ok) {
     const text = await response.text();
@@ -30,44 +46,6 @@ export async function crearUsuarioRegistrado(payload) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-}
-
-export async function asegurarUsuarioRegistradoDemo({
-  email = "juan@mail.com",
-  password = "password123",
-  nombre_visible = "Juan González",
-  foto_perfil_url = null,
-} = {}) {
-  const stored = window.localStorage.getItem("lsa_usuario_registrado_id");
-  const storedId = normalizeUserId(stored);
-
-  if (storedId) {
-    return storedId;
-  }
-
-  try {
-    const usuario = await crearUsuarioRegistrado({
-      email,
-      password,
-      nombre_visible,
-      foto_perfil_url,
-    });
-
-    const id = normalizeUserId(usuario.id_usuario);
-    if (id) {
-      window.localStorage.setItem("lsa_usuario_registrado_id", String(id));
-      return id;
-    }
-  } catch (error) {
-    // Si el correo ya existe pero no hay sesión formal implementada en el prototipo,
-    // se usa el primer usuario registrado como cuenta local de demostración.
-    if (error.status !== 400) {
-      console.warn("No se pudo crear el usuario de demostración:", error);
-    }
-  }
-
-  window.localStorage.setItem("lsa_usuario_registrado_id", "1");
-  return 1;
 }
 
 export async function obtenerUsuarioRegistrado(usuarioId) {
