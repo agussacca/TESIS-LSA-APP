@@ -1952,15 +1952,29 @@ function ChallengesScreen({
   const [roundResponses, setRoundResponses] = useState([]);
   const [roundStartedAt, setRoundStartedAt] = useState(() => new Date().toISOString());
   const [roundSaveStatus, setRoundSaveStatus] = useState("idle");
+  const [currentAnswer, setCurrentAnswer] = useState(null);
 
   const challenge = getChallengeForCategory(category.id, index);
 
   const XP_MINIJUEGO_CORRECTO = 5;
   const XP_BONUS_RONDA_PERFECTA = 10;
 
+  useEffect(() => {
+    setCurrentAnswer(null);
+    setFeedback(null);
+  }, [category.id, index]);
+
   function handleCheck() {
+    if (feedback && feedback !== "missing") return;
+
     const challengeType = getChallengeForCategory(category.id, index);
-    const isCorrect = Math.random() > 0.25;
+
+    if (!currentAnswer?.isComplete) {
+      setFeedback("missing");
+      return;
+    }
+
+    const isCorrect = Boolean(currentAnswer?.isCorrect);
     const xpForAnswer = isCorrect ? XP_MINIJUEGO_CORRECTO : 0;
 
     const response = {
@@ -1968,6 +1982,7 @@ function ChallengesScreen({
       orden: index + 1,
       fue_correcta: isCorrect,
       xp_obtenida: xpForAnswer,
+      respuesta_usuario: currentAnswer?.value ?? null,
     };
 
     const nextResponses = [...roundResponses, response];
@@ -2073,6 +2088,7 @@ function ChallengesScreen({
               setRoundResponses([]);
               setRoundStartedAt(new Date().toISOString());
               setRoundSaveStatus("idle");
+              setCurrentAnswer(null);
             }}>
               Jugar otra ronda
             </button>
@@ -2098,17 +2114,21 @@ function ChallengesScreen({
       <ProgressBar current={index + 1} total={total} />
 
       <section key={`${category.id}-${index}`} className="challenge-card challenge-enter">
-        {challenge === "signToWord" && <SignToWordChallenge onOpenPreview={onOpenPreview} />}
-        {challenge === "wordToSign" && <WordToSignChallenge onOpenPreview={onOpenPreview} />}
-        {challenge === "association" && <AssociationChallenge onOpenPreview={onOpenPreview} />}
-        {challenge === "complete" && <CompleteChallenge onOpenPreview={onOpenPreview} />}
-        {challenge === "phrase" && <PhraseChallenge onOpenPreview={onOpenPreview} />}
-        {challenge === "number" && <NumberChallenge onOpenPreview={onOpenPreview} />}
-        {challenge === "map" && <MapChallenge onOpenPreview={onOpenPreview} />}
+        {challenge === "signToWord" && <SignToWordChallenge onOpenPreview={onOpenPreview} onAnswerChange={setCurrentAnswer} />}
+        {challenge === "wordToSign" && <WordToSignChallenge onOpenPreview={onOpenPreview} onAnswerChange={setCurrentAnswer} />}
+        {challenge === "association" && <AssociationChallenge onOpenPreview={onOpenPreview} onAnswerChange={setCurrentAnswer} />}
+        {challenge === "complete" && <CompleteChallenge onOpenPreview={onOpenPreview} onAnswerChange={setCurrentAnswer} />}
+        {challenge === "phrase" && <PhraseChallenge onOpenPreview={onOpenPreview} onAnswerChange={setCurrentAnswer} />}
+        {challenge === "number" && <NumberChallenge onOpenPreview={onOpenPreview} onAnswerChange={setCurrentAnswer} />}
+        {challenge === "map" && <MapChallenge onOpenPreview={onOpenPreview} onAnswerChange={setCurrentAnswer} />}
 
         {feedback && (
           <div className={`challenge-feedback ${feedback}`}>
-            {feedback === "correct" ? "✔ Correcto  +5 XP" : "✖ Incorrecto"}
+            {feedback === "correct"
+              ? "✔ Correcto  +5 XP"
+              : feedback === "missing"
+                ? "Completá o seleccioná una respuesta antes de continuar."
+                : "✖ Incorrecto"}
           </div>
         )}
       </section>
@@ -2124,14 +2144,25 @@ function getChallengeForCategory(categoryId, index) {
   if (index === 0) return "signToWord";
   if (index === 1) return "wordToSign";
   if (index === 2) return "association";
-  if (categoryId === "comunicacion" && index === 3) return "phrase";
+  if ((categoryId === "comunicacion" || categoryId === "comunicacion_basica") && index === 3) return "phrase";
   if (categoryId === "numeros" && index === 3) return "number";
   if (categoryId === "provincias" && index === 3) return "map";
   return "complete";
 }
 
-function SignToWordChallenge({ onOpenPreview }) {
+function SignToWordChallenge({ onOpenPreview, onAnswerChange }) {
   const sign = { id: "hola", name: "Hola", thumb: "👋", description: "Saludo básico." };
+  const expected = "Hola";
+  const [selectedOption, setSelectedOption] = useState(null);
+
+  function chooseOption(option) {
+    setSelectedOption(option);
+    onAnswerChange?.({
+      isComplete: true,
+      isCorrect: option === expected,
+      value: option,
+    });
+  }
 
   return (
     <div>
@@ -2149,7 +2180,14 @@ function SignToWordChallenge({ onOpenPreview }) {
 
         <div className="option-card-grid">
           {["Hola", "Gracias", "Rojo", "Papá"].map((option) => (
-            <button key={option} className="text-option-card">{option}</button>
+            <button
+              key={option}
+              type="button"
+              className={`text-option-card ${selectedOption === option ? "selected" : ""}`}
+              onClick={() => chooseOption(option)}
+            >
+              {option}
+            </button>
           ))}
         </div>
       </div>
@@ -2157,14 +2195,24 @@ function SignToWordChallenge({ onOpenPreview }) {
   );
 }
 
-function WordToSignChallenge({ onOpenPreview }) {
+function WordToSignChallenge({ onOpenPreview, onAnswerChange }) {
   const [selectedId, setSelectedId] = useState(null);
+  const expectedId = "hola";
   const options = [
     { id: "hola", name: "Hola", thumb: "👋", description: "Saludo básico." },
     { id: "gracias", name: "Gracias", thumb: "🙏", description: "Expresión de agradecimiento." },
     { id: "mama", name: "Mamá", thumb: "👩", description: "Seña correspondiente a mamá." },
     { id: "azul", name: "Azul", thumb: "🔵", description: "Seña correspondiente al color azul." },
   ];
+
+  function chooseSign(sign) {
+    setSelectedId(sign.id);
+    onAnswerChange?.({
+      isComplete: true,
+      isCorrect: sign.id === expectedId,
+      value: sign.name,
+    });
+  }
 
   return (
     <div>
@@ -2178,9 +2226,9 @@ function WordToSignChallenge({ onOpenPreview }) {
             className={`choice-card ${selectedId === sign.id ? "selected" : ""}`}
             role="button"
             tabIndex={0}
-            onClick={() => setSelectedId(sign.id)}
+            onClick={() => chooseSign(sign)}
             onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") setSelectedId(sign.id);
+              if (event.key === "Enter" || event.key === " ") chooseSign(sign);
             }}
           >
             <PreviewableSignCard sign={sign} hideName onOpenPreview={onOpenPreview} />
@@ -2191,7 +2239,7 @@ function WordToSignChallenge({ onOpenPreview }) {
   );
 }
 
-function AssociationChallenge({ onOpenPreview }) {
+function AssociationChallenge({ onOpenPreview, onAnswerChange }) {
   const signs = [
     { id: "rojo", name: "Rojo", thumb: "🔴", description: "Seña correspondiente al color rojo." },
     { id: "azul", name: "Azul", thumb: "🔵", description: "Seña correspondiente al color azul." },
@@ -2218,6 +2266,16 @@ function AssociationChallenge({ onOpenPreview }) {
 
   const usedNames = Object.values(answers).filter(Boolean);
   const availableNames = signs.filter((sign) => !usedNames.includes(sign.name));
+
+  useEffect(() => {
+    const isComplete = signs.every((sign) => Boolean(answers[sign.id]));
+    const isCorrect = isComplete && signs.every((sign) => answers[sign.id] === sign.name);
+    onAnswerChange?.({
+      isComplete,
+      isCorrect,
+      value: { ...answers },
+    });
+  }, [answers, onAnswerChange]);
 
   return (
     <div>
@@ -2254,7 +2312,7 @@ function AssociationChallenge({ onOpenPreview }) {
   );
 }
 
-function CompleteChallenge({ onOpenPreview }) {
+function CompleteChallenge({ onOpenPreview, onAnswerChange }) {
   const [answer, setAnswer] = useState(null);
 
   function placeAnswer(item, fromSlot) {
@@ -2268,6 +2326,14 @@ function CompleteChallenge({ onOpenPreview }) {
   ];
 
   const availableOptions = options.filter((sign) => sign.id !== answer?.id);
+
+  useEffect(() => {
+    onAnswerChange?.({
+      isComplete: Boolean(answer),
+      isCorrect: answer?.id === "futbol",
+      value: answer?.name ?? null,
+    });
+  }, [answer, onAnswerChange]);
 
   return (
     <div>
@@ -2296,7 +2362,7 @@ function CompleteChallenge({ onOpenPreview }) {
   );
 }
 
-function PhraseChallenge({ onOpenPreview }) {
+function PhraseChallenge({ onOpenPreview, onAnswerChange }) {
   const [slots, setSlots] = useState({ slot1: null, slot2: null, slot3: null });
 
   const options = [
@@ -2324,6 +2390,17 @@ function PhraseChallenge({ onOpenPreview }) {
     setSlots((prev) => ({ ...prev, [slotId]: null }));
   }
 
+  useEffect(() => {
+    const expected = { slot1: "hola", slot2: "me-llamo", slot3: "como-estas" };
+    const isComplete = Object.keys(expected).every((slotId) => Boolean(slots[slotId]));
+    const isCorrect = isComplete && Object.entries(expected).every(([slotId, expectedId]) => slots[slotId]?.id === expectedId);
+    onAnswerChange?.({
+      isComplete,
+      isCorrect,
+      value: Object.fromEntries(Object.entries(slots).map(([slotId, sign]) => [slotId, sign?.name ?? null])),
+    });
+  }, [slots, onAnswerChange]);
+
   return (
     <div>
       <small className="blue-label">Armar frase básica</small>
@@ -2345,7 +2422,7 @@ function PhraseChallenge({ onOpenPreview }) {
   );
 }
 
-function NumberChallenge({ onOpenPreview }) {
+function NumberChallenge({ onOpenPreview, onAnswerChange }) {
   const [slots, setSlots] = useState({ slot1: null, slot2: null });
 
   const options = [
@@ -2372,6 +2449,17 @@ function NumberChallenge({ onOpenPreview }) {
     setSlots((prev) => ({ ...prev, [slotId]: null }));
   }
 
+  useEffect(() => {
+    const expected = { slot1: "3", slot2: "4" };
+    const isComplete = Object.keys(expected).every((slotId) => Boolean(slots[slotId]));
+    const isCorrect = isComplete && Object.entries(expected).every(([slotId, expectedId]) => slots[slotId]?.id === expectedId);
+    onAnswerChange?.({
+      isComplete,
+      isCorrect,
+      value: Object.fromEntries(Object.entries(slots).map(([slotId, sign]) => [slotId, sign?.name ?? null])),
+    });
+  }, [slots, onAnswerChange]);
+
   return (
     <div>
       <small className="blue-label">Ordenar números</small>
@@ -2393,7 +2481,7 @@ function NumberChallenge({ onOpenPreview }) {
   );
 }
 
-function MapChallenge({ onOpenPreview }) {
+function MapChallenge({ onOpenPreview, onAnswerChange }) {
   const mapTargets = useMemo(() => [
     {
       id: "salta",
@@ -2440,6 +2528,16 @@ function MapChallenge({ onOpenPreview }) {
   function clearSlot(slotId) {
     setSlots((prev) => ({ ...prev, [slotId]: null }));
   }
+
+  useEffect(() => {
+    const isComplete = mapTargets.every((target) => Boolean(slots[target.id]));
+    const isCorrect = isComplete && mapTargets.every((target) => slots[target.id]?.id === target.id);
+    onAnswerChange?.({
+      isComplete,
+      isCorrect,
+      value: Object.fromEntries(Object.entries(slots).map(([slotId, sign]) => [slotId, sign?.name ?? null])),
+    });
+  }, [slots, mapTargets, onAnswerChange]);
 
   return (
     <div>
