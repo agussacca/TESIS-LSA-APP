@@ -37,6 +37,7 @@ export default function GuidedSpellPanel({
 
   const pendingFramesRef = useRef(0);
   const savedGuidedAttemptKeyRef = useRef(null);
+  const processedMessageRef = useRef(null);
 
   const currentLetter = letters[currentIndex] || null;
 
@@ -113,7 +114,14 @@ export default function GuidedSpellPanel({
       console.error(error);
       setSaveStatus("error");
     }
-  }, [currentLetter, onGamificationSync, persistEnabled, usuarioId]);
+  }, [
+    currentLetter,
+    currentIndex,
+    word,
+    onGamificationSync,
+    persistEnabled,
+    usuarioId,
+  ]);
 
   useEffect(() => {
     setCurrentIndex(0);
@@ -133,6 +141,15 @@ export default function GuidedSpellPanel({
 
   useEffect(() => {
     if (!lastMessage) return;
+
+    // Un mismo mensaje puede volver a provocar este efecto cuando cambia la
+    // letra actual, porque persistGuidedSpellResult depende de currentLetter.
+    // Nunca debe reutilizarse el resultado final de una letra para la siguiente.
+    if (processedMessageRef.current === lastMessage) {
+      return;
+    }
+
+    processedMessageRef.current = lastMessage;
 
     if (
       lastMessage.type === "evaluate_update" ||

@@ -17,7 +17,13 @@ export function useEvaluateSocket({
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!enabled) return;
+    // Cada evaluación debe comenzar sin conservar mensajes de la letra anterior.
+    setLastMessage(null);
+    setError(null);
+
+    if (!enabled) {
+      return;
+    }
 
     const socket = createEvaluateTestSocket({
       targetLabel,
@@ -73,6 +79,10 @@ export function useEvaluateSocket({
   }, [sendJson]);
 
   const resetEvaluate = useCallback(() => {
+    // El reset remoto también invalida localmente cualquier resultado previo.
+    setLastMessage(null);
+    setError(null);
+
     return sendJson({
       type: "reset_evaluate",
       timestamp: Date.now(),
