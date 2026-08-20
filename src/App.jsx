@@ -96,6 +96,7 @@ export default function App() {
   const [selectedPreview, setSelectedPreview] = useState(null);
   const [detailsReturnScreen, setDetailsReturnScreen] = useState("home");
   const [practiceInitialLetter, setPracticeInitialLetter] = useState("A");
+  const [practiceSingleSign, setPracticeSingleSign] = useState(false);
   const [profileData, setProfileData] = useState(DEFAULT_PROFILE_DATA);
   const [userProgress, setUserProgress] = useState(() => normalizeGamificationProgress(null));
   const [learningCategories, setLearningCategories] = useState([]);
@@ -252,6 +253,7 @@ export default function App() {
 
     if (section === "camera") {
       setPracticeInitialLetter("A");
+      setPracticeSingleSign(false);
     }
 
     setScreen(section);
@@ -510,6 +512,7 @@ export default function App() {
           <CameraPracticeScreen
             onBack={goHome}
             initialLetter={practiceInitialLetter}
+            singleSignMode={practiceSingleSign}
             signs={signsByCategory.abecedario || []}
             onGamificationSync={syncGamificationNow}
             usuarioId={usuarioId}
@@ -585,6 +588,7 @@ export default function App() {
             activeCategory?.id === "abecedario"
               ? (sign) => {
                   setPracticeInitialLetter(sign.name);
+                  setPracticeSingleSign(true);
                   setSelectedPreview(null);
                   setScreen("camera");
                 }
@@ -1660,32 +1664,60 @@ function PlayIcon() {
   return <span className="icon-play" aria-hidden="true"></span>;
 }
 
-function MediaSlot({ sign, playing, onVideoEnded }) {
+function MediaSlot({
+  sign,
+  expanded = false,
+  videoRef,
+  playing,
+  onTogglePlay,
+  onVideoEnded,
+  onVideoError,
+}) {
   const label = sign?.name || sign?.thumb || "?";
   const imageSrc = sign?.imageUrl || sign?.image;
   const videoSrc = sign?.videoUrl || sign?.video;
-  const videoRef = useRef(null);
+  const showVideo = expanded && Boolean(videoSrc);
 
-  useEffect(() => {
-    if (!playing || !videoRef.current) return;
-    const playPromise = videoRef.current.play();
-    if (playPromise?.catch) playPromise.catch(() => {});
-  }, [playing, videoSrc]);
+  function handleKeyDown(event) {
+    if (!showVideo) return;
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onTogglePlay?.(event);
+    }
+  }
 
   return (
-    <div className="media-slot">
-      {playing && videoSrc ? (
+    <div
+      className={`media-slot ${showVideo ? "has-video" : ""}`}
+      onClick={showVideo ? onTogglePlay : undefined}
+      onKeyDown={showVideo ? handleKeyDown : undefined}
+      role={showVideo ? "button" : undefined}
+      tabIndex={showVideo ? 0 : undefined}
+      aria-label={
+        showVideo
+          ? playing
+            ? `Pausar video de ${label}`
+            : `Reproducir video de ${label}`
+          : undefined
+      }
+      title={showVideo ? (playing ? "Pausar video" : "Reproducir video") : undefined}
+    >
+      {showVideo ? (
         <video
           ref={videoRef}
           key={videoSrc}
           className="card-video"
           src={videoSrc}
+          poster={imageSrc || undefined}
           playsInline
           muted
+          preload="metadata"
           controls={false}
           disablePictureInPicture
           controlsList="nodownload noplaybackrate noremoteplayback"
           onEnded={onVideoEnded}
+          onError={onVideoError}
         />
       ) : imageSrc ? (
         <img src={imageSrc} alt={`Seña ${label}`} />
@@ -1715,6 +1747,9 @@ function SignCard({
   onPractice,
 }) {
   const [playing, setPlaying] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+  const videoRef = useRef(null);
+
   const isLearning = variant === "learning" || variant === "association";
   const isPracticeModal = expanded && showPracticeButton;
 
@@ -1722,23 +1757,63 @@ function SignCard({
   const showExpandedName = isLearning && expanded && !hideName && !isPracticeModal;
   const showDescription = isLearning && expanded && !isPracticeModal;
   const videoSrc = sign?.videoUrl || sign?.video;
-  const canPlayVideo = Boolean(videoSrc);
+  const canPlayVideo = Boolean(videoSrc) && !videoError;
+  const expandedTitle =
+    sign?.categoryId === "abecedario"
+      ? `Letra ${sign?.name || ""}`
+      : sign?.name || "Seña";
   const actionLabel = expanded ? "Cerrar" : "Agrandar";
+
+  useEffect(() => {
+    setPlaying(false);
+    setVideoError(false);
+  }, [sign?.id, videoSrc]);
   const actionHandler = expanded ? onCollapse : onExpand;
 
   function handleAction(event) {
     event.stopPropagation();
+    videoRef.current?.pause();
     setPlaying(false);
     actionHandler?.();
   }
 
-  function handlePlay(event) {
-    event.stopPropagation();
-    if (canPlayVideo) setPlaying(true);
+  function startVideoPlayback(event) {
+    event?.stopPropagation?.();
+
+    if (!canPlayVideo || !videoRef.current) return;
+
+    const playPromise = videoRef.current.play();
+
+    if (playPromise?.then) {
+      playPromise
+        .then(() => setPlaying(true))
+        .catch((error) => {
+          console.warn("No se pudo reproducir el video:", error);
+          setPlaying(false);
+        });
+      return;
+    }
+
+    setPlaying(true);
+  }
+
+  function toggleVideoPlayback(event) {
+    event?.stopPropagation?.();
+
+    if (!canPlayVideo || !videoRef.current) return;
+
+    if (videoRef.current.paused || videoRef.current.ended) {
+      startVideoPlayback(event);
+      return;
+    }
+
+    videoRef.current.pause();
+    setPlaying(false);
   }
 
   function handlePractice(event) {
     event.stopPropagation();
+    videoRef.current?.pause();
     setPlaying(false);
     onPractice?.(sign);
   }
@@ -1758,11 +1833,27 @@ function SignCard({
 
       {expanded && (
         <div className="screen-top card fade-up">
-          <h2>Letra A</h2>
+          <h2>{expandedTitle}</h2>
         </div>
       )}
 
-      <MediaSlot sign={sign} playing={playing} onVideoEnded={() => setPlaying(false)} />
+      <MediaSlot
+        sign={sign}
+        expanded={expanded}
+        videoRef={videoRef}
+        playing={playing}
+        onTogglePlay={toggleVideoPlayback}
+        onVideoEnded={() => {
+          setPlaying(false);
+          if (videoRef.current) {
+            videoRef.current.currentTime = 0;
+          }
+        }}
+        onVideoError={() => {
+          setPlaying(false);
+          setVideoError(true);
+        }}
+      />
 
       {expanded && (
         <button
@@ -1770,10 +1861,16 @@ function SignCard({
           type="button"
           aria-label="Reproducir video"
           disabled={!canPlayVideo}
-          onClick={handlePlay}
+          onClick={startVideoPlayback}
         >
           <PlayIcon />
         </button>
+      )}
+
+      {expanded && videoError && (
+        <small className="practice-save-status error">
+          Video no disponible para esta seña.
+        </small>
       )}
 
       {expanded && showPracticeButton && (
@@ -1821,20 +1918,26 @@ function CardPreviewModal({ preview, onClose, onPracticeSign }) {
 function CameraPracticeScreen({
   onBack,
   initialLetter = "A",
+  singleSignMode = false,
   signs = [],
   onGamificationSync,
   usuarioId = null,
   persistEnabled = true,
 }) {
-  const letters = useMemo(
-    () => signs.map((sign) => sign.name).filter(Boolean),
-    [signs]
-  );
+  const letters = useMemo(() => {
+    if (singleSignMode && initialLetter) {
+      return [initialLetter];
+    }
 
-  const initialIndex = Math.max(
-    0,
-    letters.findIndex((letter) => letter === initialLetter)
-  );
+    return signs.map((sign) => sign.name).filter(Boolean);
+  }, [initialLetter, signs, singleSignMode]);
+
+  const initialIndex = singleSignMode
+    ? 0
+    : Math.max(
+        0,
+        letters.findIndex((letter) => letter === initialLetter)
+      );
 
   const [index, setIndex] = useState(initialIndex);
 
@@ -1842,10 +1945,11 @@ function CameraPracticeScreen({
     setIndex(initialIndex);
   }, [initialIndex]);
 
-  const current = letters[index] || "A";
+  const current = letters[index] || initialLetter || "A";
   const isLast = index === letters.length - 1;
 
   function next() {
+    if (singleSignMode) return;
     setIndex((prev) => Math.min(prev + 1, letters.length - 1));
   }
 
@@ -1856,18 +1960,28 @@ function CameraPracticeScreen({
       <div className="screen-header card fade-up">
         <div>
           <h2>Práctica con cámara</h2>
-          <p>Realizá la letra indicada frente a la cámara.</p>
+          <p>
+            {singleSignMode
+              ? `Practicá únicamente la letra ${current} frente a la cámara.`
+              : "Realizá la letra indicada frente a la cámara."}
+          </p>
         </div>
 
-        <strong>{index + 1}/{letters.length}</strong>
+        <strong>
+          {singleSignMode ? `Letra ${current}` : `${index + 1}/${letters.length}`}
+        </strong>
       </div>
 
-      <ProgressBar current={index + 1} total={letters.length} />
+      {!singleSignMode && (
+        <ProgressBar current={index + 1} total={letters.length} />
+      )}
 
       <EvaluatePracticePanel
         targetLabel={current}
-        onNext={next}
+        onNext={singleSignMode ? undefined : next}
         isLast={isLast}
+        showNextButton={!singleSignMode}
+        singleMode={singleSignMode}
         onGamificationSync={onGamificationSync}
         usuarioId={usuarioId}
         persistEnabled={persistEnabled}

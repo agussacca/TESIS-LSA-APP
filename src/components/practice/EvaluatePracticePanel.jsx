@@ -11,6 +11,8 @@ export default function EvaluatePracticePanel({
   targetLabel,
   onNext,
   isLast = false,
+  showNextButton = true,
+  singleMode = false,
   onGamificationSync,
   usuarioId = null,
   persistEnabled = true,
@@ -332,16 +334,24 @@ export default function EvaluatePracticePanel({
             </button>
           )}
 
-          <button
-            className="primary"
-            onClick={goNext}
-            disabled={!finalResult || isLast}
-          >
-            Siguiente
-          </button>
+          {showNextButton && (
+            <button
+              className="primary"
+              onClick={goNext}
+              disabled={!finalResult || isLast}
+            >
+              Siguiente
+            </button>
+          )}
         </div>
 
-        {isLast && finalResult && (
+        {singleMode && finalResult && (
+          <small className="practice-end-note">
+            Podés repetir esta letra todas las veces que quieras.
+          </small>
+        )}
+
+        {!singleMode && isLast && finalResult && (
           <small className="practice-end-note">
             Llegaste al final de esta práctica.
           </small>
