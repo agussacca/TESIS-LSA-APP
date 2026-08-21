@@ -1751,11 +1751,16 @@ function SignCard({
   const videoRef = useRef(null);
 
   const isLearning = variant === "learning" || variant === "association";
-  const isPracticeModal = expanded && showPracticeButton;
+
+  // Toda tarjeta abierta desde CardPreviewModal usa el mismo formato visual.
+  // El botón "Practicar" sigue dependiendo exclusivamente de showPracticeButton.
+  const useUnifiedExpandedLayout = expanded;
 
   const showName = isLearning && !expanded && (customNameSlot || !hideName);
-  const showExpandedName = isLearning && expanded && !hideName && !isPracticeModal;
-  const showDescription = isLearning && expanded && !isPracticeModal;
+  const showExpandedName =
+    isLearning && expanded && !hideName && !useUnifiedExpandedLayout;
+  const showDescription =
+    isLearning && expanded && !useUnifiedExpandedLayout;
   const videoSrc = sign?.videoUrl || sign?.video;
   const canPlayVideo = Boolean(videoSrc) && !videoError;
   const expandedTitle =
@@ -1820,7 +1825,7 @@ function SignCard({
 
   return (
     <article
-      className={`sign-card-ui ${variant} ${expanded ? "expanded" : "normal"} ${isPracticeModal ? "practice-modal-card" : ""} ${emphasizeName ? "emphasize-name" : ""} ${largeName ? "large-name-card" : ""} ${className}`}
+      className={`sign-card-ui ${variant} ${expanded ? "expanded" : "normal"} ${useUnifiedExpandedLayout ? "practice-modal-card" : ""} ${emphasizeName ? "emphasize-name" : ""} ${largeName ? "large-name-card" : ""} ${className}`}
       style={style}
       draggable={draggable}
       onDragStart={onDragStart}
