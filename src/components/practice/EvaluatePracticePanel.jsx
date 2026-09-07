@@ -28,6 +28,10 @@ export default function EvaluatePracticePanel({
   const pendingFramesRef = useRef(0);
   const savedAttemptKeyRef = useRef(null);
 
+  // Evita registrar dos veces la misma medición si React vuelve a ejecutar
+  // el efecto con el mismo mensaje final.
+  const latencySampledCounterRef = useRef(null);
+
   const {
     connected,
     lastMessage,
@@ -102,6 +106,7 @@ export default function EvaluatePracticePanel({
 
     pendingFramesRef.current = 0;
     savedAttemptKeyRef.current = null;
+    latencySampledCounterRef.current = null;
   }, [targetLabel]);
 
   useEffect(() => {
@@ -121,13 +126,63 @@ export default function EvaluatePracticePanel({
     }
 
     if (lastMessage.final_result) {
+      const messageCounter = lastMessage.counter;
+      const sentAt = Number(lastMessage.client_sent_perf_ms);
+
+      if (
+        Number.isFinite(sentAt) &&
+        latencySampledCounterRef.current !== messageCounter
+      ) {
+        const receivedAt = Number(lastMessage.client_received_perf_ms);
+
+        if (!Number.isFinite(receivedAt)) {
+          return;
+        }
+
+        const latencyMs = receivedAt - sentAt;
+
+        const dynamicRequired =
+          lastMessage.final_result.dynamic?.required === true;
+
+        const sample = {
+          label: targetLabel,
+          validation_type: dynamicRequired
+            ? "Geométrica y dinámica"
+            : "Geométrica",
+          latency_ms: Number(latencyMs.toFixed(2)),
+          accepted: Boolean(lastMessage.final_result.accepted),
+          predicted: lastMessage.final_result.pred_label ?? null,
+          confidence:
+            lastMessage.final_result.confidence == null
+              ? null
+              : Number(lastMessage.final_result.confidence),
+          static_required:
+            lastMessage.final_result.static?.required === true,
+          dynamic_required: dynamicRequired,
+          counter: messageCounter,
+          measured_at: new Date().toISOString(),
+        };
+
+        if (!Array.isArray(window.__senappLatencySamples)) {
+          window.__senappLatencySamples = [];
+        }
+
+        window.__senappLatencySamples.push(sample);
+        latencySampledCounterRef.current = messageCounter;
+
+        console.log(
+          `[LATENCIA] ${targetLabel}: ${sample.latency_ms.toFixed(2)} ms`,
+          sample
+        );
+      }
+
       setFinalResult(lastMessage.final_result);
       setCaptureEnabled(false);
       persistFinalResult(lastMessage.final_result, lastMessage.counter);
     } else if (lastMessage.last_result) {
       setFinalResult(lastMessage.last_result);
     }
-  }, [lastMessage, persistFinalResult]);
+  }, [lastMessage, persistFinalResult, targetLabel]);
 
   useEffect(() => {
     if (!socketEnabled) {
@@ -160,6 +215,7 @@ export default function EvaluatePracticePanel({
 
     pendingFramesRef.current = 0;
     savedAttemptKeyRef.current = null;
+    latencySampledCounterRef.current = null;
   }
 
   function startAttempt() {

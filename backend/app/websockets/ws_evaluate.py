@@ -81,6 +81,14 @@ async def evaluate_test_socket(
                         "frontend_height": message.get("height"),
                         "decoded_width": decoded.width,
                         "decoded_height": decoded.height,
+
+                        # Se devuelve el timestamp de performance.now()
+                        # recibido desde el navegador. El backend no lo
+                        # interpreta ni lo modifica.
+                        "client_sent_perf_ms": message.get(
+                            "client_sent_perf_ms"
+                        ),
+
                         "timestamp": datetime.utcnow().isoformat(),
                     })
 
@@ -90,6 +98,9 @@ async def evaluate_test_socket(
                     await websocket.send_json({
                         "type": "frame_decode_error",
                         "counter": counter,
+                        "client_sent_perf_ms": message.get(
+                            "client_sent_perf_ms"
+                        ),
                         "error": str(exc),
                         "message": "No se pudo decodificar el frame recibido.",
                         "timestamp": datetime.utcnow().isoformat(),
@@ -99,6 +110,9 @@ async def evaluate_test_socket(
                     await websocket.send_json({
                         "type": "evaluate_process_error",
                         "counter": counter,
+                        "client_sent_perf_ms": message.get(
+                            "client_sent_perf_ms"
+                        ),
                         "error": str(exc),
                         "message": "Ocurrió un error durante la evaluación.",
                         "timestamp": datetime.utcnow().isoformat(),

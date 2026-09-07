@@ -36,7 +36,12 @@ export function useEvaluateSocket({
         setError(null);
       },
       onMessage: (data) => {
-        setLastMessage(data);
+        // Marca el instante en que el navegador recibe efectivamente
+        // el mensaje WebSocket, antes de que React procese/renderice el estado.
+        setLastMessage({
+          ...data,
+          client_received_perf_ms: performance.now(),
+        });
       },
       onError: () => {
         setError("Error en WebSocket de evaluación");
@@ -75,6 +80,11 @@ export function useEvaluateSocket({
       ...framePayload,
       type: "camera_frame",
       timestamp: Date.now(),
+
+      // Marca temporal de alta resolución generada por el navegador.
+      // Se devuelve sin modificar desde el backend y permite medir
+      // el tiempo transcurrido hasta recibir el resultado final.
+      client_sent_perf_ms: performance.now(),
     });
   }, [sendJson]);
 
