@@ -14,7 +14,7 @@ from core.features import (
 
 
 # ============================================================
-# Validación dinámica para letras con movimiento - Abecedario LSA
+# Validacion dinamica para letras con movimiento - Abecedario LSA
 # ============================================================
 #
 # Objetivo:
@@ -128,7 +128,7 @@ DYNAMIC_RULES = {
         # Esto ayuda a rechazar preparación, H invertida,
         # verticales/horizontales aisladas y movimientos hacia abajo.
         "min_net_dx": 0.060,
-        "min_net_dy": 0.030,
+        "min_net_dy": -0.045,#0.030,
 
         # La H real no fue una línea casi recta en las pruebas.
         # Esto ayuda a rechazar diagonales directas y movimientos
@@ -142,8 +142,8 @@ DYNAMIC_RULES = {
     },
     "J": {
         # Reglas básicas de magnitud.
-        "min_movement_total": 0.12,
-        "min_axis_range": 0.085,
+        "min_movement_total": 0.12, #PROPUESTA: "min_movement_total": 0.095
+        "min_axis_range": 0.078,#0.085,
         "min_valid_hand_ratio": 0.70,
 
         # Preprocesamiento.
@@ -159,8 +159,8 @@ DYNAMIC_RULES = {
         #
         # La J real observada sigue la mandíbula con un arco suave:
         # desplazamiento lateral dominante, pero con curvatura moderada.
-        "min_x_range": 0.085,
-        "min_y_range": 0.0365, #0.040,
+        "min_x_range": 0.078,#0.085,
+        "min_y_range": 0.028, #0.0365,
         "max_y_range": 0.120,
 
         # Dirección global observada para tu J real:
@@ -175,8 +175,8 @@ DYNAMIC_RULES = {
 
         # La J real no es una línea totalmente recta ni un movimiento
         # demasiado errático.
-        "min_path_efficiency": 0.55,
-        "max_path_efficiency": 0.80,
+        "min_path_efficiency": 0.51,
+        "max_path_efficiency": 0.85,
 
         # La curvatura bajo la mandíbula aparece como al menos un cambio
         # suave de dirección en Y. En X no debería haber zigzag.
@@ -185,13 +185,13 @@ DYNAMIC_RULES = {
 
         # Balance aproximado del movimiento.
         # La J no debería ser casi todo vertical ni una horizontal rígida.
-        "min_x_motion_fraction": 0.45,
-        "max_x_motion_fraction": 0.65,
+        "min_x_motion_fraction": 0.42,
+        "max_x_motion_fraction": 0.68,
     },
     "Z": {
         # Reglas básicas de magnitud.
-        "min_movement_total": 0.24, #0.26,
-        "min_axis_range": 0.075, #0.085,
+        "min_movement_total": 0.21, #0.26,
+        "min_axis_range": 0.059, #0.085,
         "min_valid_hand_ratio": 0.70,
 
         # Preprocesamiento.
@@ -202,8 +202,8 @@ DYNAMIC_RULES = {
         # Reglas específicas de trayectoria Z.
         #
         # La Z real, en tus pruebas, activa ambos ejes.
-        "min_x_range": 0.075, #0.085,
-        "min_y_range": 0.070, #0.080,
+        "min_x_range": 0.056, #0.085,
+        "min_y_range": 0.052, #0.080,
 
         # Dirección global observada para tu Z:
         #   net_dx negativo
@@ -212,7 +212,7 @@ DYNAMIC_RULES = {
         # Esto ayuda a rechazar Z invertida, movimiento parcial y
         # movimientos de preparación.
         "max_net_dx": -0.065, #-0.075,
-        "min_net_dy": 0.060, #0.070,
+        "min_net_dy": 0.044, #0.070,
 
         # La Z no debe ser una línea casi recta.
         # prepare_move / líneas simples suelen tener eficiencia alta.
@@ -370,7 +370,7 @@ class DynamicValidationResult:
 
 def is_dynamic_label(label: str) -> bool:
     """
-    Indica si una letra requiere validación dinámica.
+    Indica si una letra requiere Validacion dinamica.
     """
 
     return str(label).upper() in DYNAMIC_LABELS
@@ -696,11 +696,11 @@ def _build_dynamic_result(
 
     if message is None:
         if not required:
-            message = "Validación dinámica no requerida."
+            message = "Validacion dinamica no requerida."
         elif ok:
             if normalized_label in {"H", "J", "Z"}:
                 message = (
-                    f"Validación dinámica OK para {normalized_label}: "
+                    f"Validacion dinamica OK para {normalized_label}: "
                     f"movement_total={metrics.get('movement_total', 0.0):.4f}, "
                     f"x_range={metrics.get('x_range', 0.0):.4f}, "
                     f"y_range={metrics.get('y_range', 0.0):.4f}, "
@@ -714,14 +714,14 @@ def _build_dynamic_result(
                 )
             else:
                 message = (
-                    f"Validación dinámica OK para {normalized_label}: "
+                    f"Validacion dinamica OK para {normalized_label}: "
                     f"movement_total={metrics.get('movement_total', 0.0):.4f}, "
                     f"axis_range={metrics.get('axis_range', 0.0):.4f}, "
                     f"valid_hand_ratio={metrics.get('valid_hand_ratio', 0.0):.3f}"
                 )
         else:
             message = (
-                f"Validación dinámica NO OK para {normalized_label}: "
+                f"Validacion dinamica NO OK para {normalized_label}: "
                 + " | ".join(reasons)
             )
 

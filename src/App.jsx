@@ -1362,9 +1362,31 @@ function WeeklyObjectiveCard({ objective }) {
 }
 
 function CategoryCard({ category, locked, onClick }) {
+  const [imageError, setImageError] = useState(false);
+
+  const showImage =
+    Boolean(category.imageUrl) &&
+    !imageError;
+
   return (
-    <button className={`category-card ${locked ? "locked" : ""}`} onClick={onClick}>
-      <div className={`category-icon ${category.color}`}>{category.icon}</div>
+    <button
+      className={`category-card ${locked ? "locked" : ""}`}
+      onClick={onClick}
+    >
+      {showImage ? (
+        <div className="category-cover">
+          <img
+            src={category.imageUrl}
+            alt={`Portada de ${category.name}`}
+            onError={() => setImageError(true)}
+          />
+        </div>
+      ) : (
+        <div className={`category-icon ${category.color}`}>
+          {category.icon}
+        </div>
+      )}
+
       <h4>{category.name}</h4>
       <p>Aprendizaje y desafíos</p>
 

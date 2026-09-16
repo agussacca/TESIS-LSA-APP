@@ -14,7 +14,7 @@ from core.features import (
 
 
 # ============================================================
-# Validación geométrica estática - Abecedario LSA V2
+# Validacion geometrica estatica - Abecedario LSA V2
 # ============================================================
 #
 # Objetivo:
@@ -53,7 +53,7 @@ from core.features import (
 #
 # Nota:
 #   H, J y Z son letras dinámicas, pero también tienen una regla
-#   geométrica estática complementaria para validar la configuración
+#   geométrica estatica complementaria para validar la configuración
 #   de mano y/o zona corporal durante la ventana capturada.
 #
 # Uso previsto:
@@ -74,14 +74,14 @@ STATIC_GEOMETRY_LABELS = {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "Z",
 # Reglas iniciales calibradas con debug_static_geometry_abecedario.py.
 #
 # C:
-#   Pose estática con índice y pulgar formando una C abierta;
+#   Pose estatica con índice y pulgar formando una C abierta;
 #   medio, anular y meñique recogidos.
 #
 # L:
-#   Pose estática con pulgar horizontal e índice vertical. Palma/yema hacia cámara.
+#   Pose estatica con pulgar horizontal e índice vertical. Palma/yema hacia cámara.
 #
 # K:
-#   Pose estática con dorso/nudillos hacia cámara:
+#   Pose estatica con dorso/nudillos hacia cámara:
 #     - índice diagonal hacia arriba-derecha;
 #     - medio casi horizontal hacia la derecha;
 #     - pulgar visible en el vértice entre índice y medio;
@@ -114,9 +114,9 @@ STATIC_GEOMETRY_RULES = {
         "thumb_index_tip_distance_norm_min": 0.38,
         "thumb_index_tip_distance_norm_max": 0.85,
 
-        "thumb_mcp_tip_angle_deg_min": -75.0,
+        "thumb_mcp_tip_angle_deg_min": -82.0,#-75.0,
         "thumb_mcp_tip_angle_deg_max": -20.0,
-        "thumb_mcp_tip_horizontality_min": 0.35,
+        "thumb_mcp_tip_horizontality_min": 0.15,#0.35,
         "thumb_mcp_tip_above_base_min": 0.80,
 
         # Mantener el mismo supuesto lateral que L/K para tu cámara/mano actual.
@@ -136,7 +136,7 @@ STATIC_GEOMETRY_RULES = {
         "finger_count_max": 5.25,
 
         "thumb_extended_score_min": 0.55,
-        "thumb_extended_score_max": 0.85,
+        "thumb_extended_score_max": 0.87,#0.85,
 
         "index_extended_score_min": 0.80,
         "middle_extended_score_min": 0.90,
@@ -151,13 +151,13 @@ STATIC_GEOMETRY_RULES = {
 
         # Dedos largos verticales/paralelos.
         "index_mcp_tip_angle_deg_min": -100.0,
-        "index_mcp_tip_angle_deg_max": -78.0,
-        "index_mcp_tip_verticality_min": 0.97,
+        "index_mcp_tip_angle_deg_max": -73.0,#-78.0,
+        "index_mcp_tip_verticality_min": 0.95,#0.97,
         "index_mcp_tip_above_base_min": 0.80,
 
         "middle_mcp_tip_angle_deg_min": -100.0,
-        "middle_mcp_tip_angle_deg_max": -78.0,
-        "middle_mcp_tip_verticality_min": 0.97,
+        "middle_mcp_tip_angle_deg_max": -73.0,#-78.0,
+        "middle_mcp_tip_verticality_min": 0.96,#0.97,
         "middle_mcp_tip_above_base_min": 0.80,
 
         "index_middle_axis_angle_3d_deg_max": 8.0,
@@ -165,10 +165,10 @@ STATIC_GEOMETRY_RULES = {
         # Pulgar doblado hacia dentro, no extendido hacia arriba ni abierto
         # lateralmente. También ayuda a rechazar la B demasiado frontal.
         "thumb_mcp_tip_angle_deg_min": -118.0,
-        "thumb_mcp_tip_angle_deg_max": -92.0,
+        "thumb_mcp_tip_angle_deg_max": -84.0,#-92.0,
         "thumb_mcp_tip_horizontality_max": 0.45,
-        "thumb_mcp_tip_left_of_base_min": 0.80,
-        "thumb_mcp_tip_right_of_base_max": 0.20,
+        "thumb_mcp_tip_left_of_base_min": 0.00,#0.80,
+        "thumb_mcp_tip_right_of_base_max": 1.00,#0.20,
 
         "thumb_index_axis_angle_3d_deg_max": 28.0,
         "thumb_middle_axis_angle_3d_deg_max": 28.0,
@@ -188,13 +188,13 @@ STATIC_GEOMETRY_RULES = {
         # y medio/anular/meñique cerrados.
         # Ajuste 2026-05-18: rangos ampliados con 10 nuevos debugs correctos
         # de C y 10 de E; C/E se diferencian principalmente por capa espacial.
-        "finger_count_min": 1.50,
+        "finger_count_min": 0.95,#1.50,
         "finger_count_max": 2.20,
 
         "thumb_extended_score_min": 0.70,
         "thumb_extended_score_max": 1.00,
 
-        "index_extended_score_min": 0.48,
+        "index_extended_score_min": 0.45,#0.48,
         "index_extended_score_max": 0.85,
 
         "middle_extended_score_max": 0.35,
@@ -203,25 +203,25 @@ STATIC_GEOMETRY_RULES = {
 
         # Apertura principal de la C. Se rechaza tanto la pinza cerrada
         # como una apertura excesiva tipo L/deformación.
-        "thumb_index_tip_distance_norm_min": 0.75,
+        "thumb_index_tip_distance_norm_min": 0.58,#0.75,
         "thumb_index_tip_distance_norm_max": 1.30,
 
         # El índice debe estar separado de los dedos cerrados.
         # Esto rechaza variantes donde el medio acompaña al índice
         # o queda pegado como parte de la apertura.
-        "index_middle_tip_distance_norm_min": 0.80,
+        "index_middle_tip_distance_norm_min": 0.62,#0.80,
 
         # Índice inclinado hacia arriba formando la curva superior.
-        "index_mcp_tip_angle_deg_min": -60.0,
-        "index_mcp_tip_angle_deg_max": -18.0,
-        "index_mcp_tip_verticality_min": 0.35,
-        "index_mcp_tip_verticality_max": 0.85,
+        "index_mcp_tip_angle_deg_min": -67.0,#-60.0,
+        "index_mcp_tip_angle_deg_max": -14.0,#-18.0,
+        "index_mcp_tip_verticality_min": 0.24,#0.35,
+        "index_mcp_tip_verticality_max": 0.92,#0.85,
         "index_mcp_tip_above_base_min": 0.80,
 
         # Pulgar casi horizontal formando la base de la C.
         "thumb_mcp_tip_angle_deg_min": -30.0,
         "thumb_mcp_tip_angle_deg_max": 15.0,
-        "thumb_mcp_tip_horizontality_min": 0.88,
+        "thumb_mcp_tip_horizontality_min": 0.86,#0.88,
         "thumb_mcp_tip_right_of_base_min": 0.80,
         "thumb_mcp_tip_left_of_base_max": 0.20,
 
@@ -229,7 +229,7 @@ STATIC_GEOMETRY_RULES = {
         # - C demasiado abierta;
         # - pulgar mal orientado;
         # - medio activo/pegado.
-        "thumb_index_axis_angle_3d_deg_min": 12.0,
+        "thumb_index_axis_angle_3d_deg_min": 3.0,#12.0,
         "thumb_index_axis_angle_3d_deg_max": 60.0,
         "thumb_middle_axis_angle_3d_deg_min": 50.0,
         "thumb_middle_axis_angle_3d_deg_max": 105.0,
@@ -264,47 +264,47 @@ STATIC_GEOMETRY_RULES = {
         #   + índice/anular/meñique verticales hacia arriba.
         # Por eso se exige thumb_middle_tip_distance_norm bajo, pero
         # middle_extended_score máximo bajo/moderado.
-        "finger_count_min": 3.50,
+        "finger_count_min": 3.00,
         "finger_count_max": 4.40,
 
         "thumb_extended_score_min": 0.85,
-        "index_extended_score_min": 0.80,
+        "index_extended_score_min": 0.50,
         "middle_extended_score_max": 0.55,
-        "ring_extended_score_min": 0.85,
+        "ring_extended_score_min": 0.58,
         "pinky_extended_score_min": 0.85,
 
         # Contacto correcto: pulgar con medio.
         # El mínimo pulgar-índice evita aceptar variantes donde el contacto
         # se arma con índice en lugar de medio.
         "thumb_middle_tip_distance_norm_max": 0.13,
-        "thumb_index_tip_distance_norm_min": 0.65,
+        "thumb_index_tip_distance_norm_min": 0.18,
 
         # Separaciones características: el medio baja/lateraliza hacia el
         # pulgar y queda lejos de índice/anular. Anular y meñique quedan
         # abiertos arriba, pero dentro de un rango natural.
-        "index_middle_tip_distance_norm_min": 0.70,
-        "middle_ring_tip_distance_norm_min": 0.65, #0.75,
-        "ring_pinky_tip_distance_norm_min": 0.38,
+        "index_middle_tip_distance_norm_min": 0.10,
+        "middle_ring_tip_distance_norm_min": 0.23,
+        "ring_pinky_tip_distance_norm_min": 0.36,
         "ring_pinky_tip_distance_norm_max": 0.75,
 
         # Índice arriba, con tolerancia a ejecución relajada.
         "index_mcp_tip_angle_deg_min": -95.0,
-        "index_mcp_tip_angle_deg_max": -50.0,
-        "index_mcp_tip_verticality_min": 0.80,
+        "index_mcp_tip_angle_deg_max": -28.0,
+        "index_mcp_tip_verticality_min": 0.48,
         "index_mcp_tip_above_base_min": 0.80,
 
         # Medio lateralizado hacia el pulgar: no debe quedar vertical hacia
         # arriba como dedo extendido adicional.
-        "middle_mcp_tip_angle_deg_min": 5.0, #8.0, #15.0,
+        "middle_mcp_tip_angle_deg_min": -33.0,
         "middle_mcp_tip_angle_deg_max": 55.0,
         "middle_mcp_tip_horizontality_min": 0.60,
-        "middle_mcp_tip_below_base_min": 0.75,
+        "middle_mcp_tip_below_base_min": 0.00,
         "middle_mcp_tip_right_of_base_min": 0.80,
 
         # Anular y meñique extendidos hacia arriba.
         "ring_mcp_tip_angle_deg_min": -90.0,
-        "ring_mcp_tip_angle_deg_max": -55.0,
-        "ring_mcp_tip_verticality_min": 0.85,
+        "ring_mcp_tip_angle_deg_max": -48.0,
+        "ring_mcp_tip_verticality_min": 0.75,
         "ring_mcp_tip_above_base_min": 0.80,
 
         "pinky_mcp_tip_angle_deg_min": -112.0,
@@ -314,9 +314,9 @@ STATIC_GEOMETRY_RULES = {
 
         # Pulgar activo hacia el medio, no doblado/oculto ni invertido.
         "thumb_mcp_tip_angle_deg_min": -75.0,
-        "thumb_mcp_tip_angle_deg_max": -35.0,
-        "thumb_mcp_tip_horizontality_min": 0.34, #0.38,
-        "thumb_mcp_tip_horizontality_max": 0.82,
+        "thumb_mcp_tip_angle_deg_max": -33.0,
+        "thumb_mcp_tip_horizontality_min": 0.32,
+        "thumb_mcp_tip_horizontality_max": 0.84,
         "thumb_mcp_tip_right_of_base_min": 0.80,
         "thumb_mcp_tip_left_of_base_max": 0.20,
 
@@ -324,10 +324,10 @@ STATIC_GEOMETRY_RULES = {
         #   - índice y medio no son paralelos;
         #   - pulgar y medio mantienen un ángulo compatible con contacto
         #     pulgar-medio real, no con contacto pulgar-índice/anular.
-        "index_middle_axis_angle_3d_deg_min": 72.0, #80.0,
+        "index_middle_axis_angle_3d_deg_min": 18.0,
         "index_middle_axis_angle_3d_deg_max": 125.0,
 
-        "thumb_middle_axis_angle_3d_deg_min": 60.0, #65.0,
+        "thumb_middle_axis_angle_3d_deg_min": 35.0,
         "thumb_middle_axis_angle_3d_deg_max": 90.0,
 
         # Palma visible/diagonal hacia cámara. La variante con dorso invierte
@@ -344,37 +344,37 @@ STATIC_GEOMETRY_RULES = {
         # mismo lado de la mano. Ajuste 2026-05-18: rangos manuales
         # alineados con C y E correctas nuevas; la diferencia semántica
         # queda en la capa espacial ojo-mano.
-        "finger_count_min": 1.50,
+        "finger_count_min": 0.95,#1.50,
         "finger_count_max": 2.20,
 
         "thumb_extended_score_min": 0.70,
         "thumb_extended_score_max": 1.00,
 
-        "index_extended_score_min": 0.48,
+        "index_extended_score_min": 0.42,#0.48,
         "index_extended_score_max": 0.85,
 
         "middle_extended_score_max": 0.35,
         "ring_extended_score_max": 0.35,
         "pinky_extended_score_max": 0.33, #0.35
 
-        "thumb_index_tip_distance_norm_min": 0.75,
-        "thumb_index_tip_distance_norm_max": 1.30,
+        "thumb_index_tip_distance_norm_min": 0.58,#0.75,
+        "thumb_index_tip_distance_norm_max": 1.34,#1.30,
 
-        "index_middle_tip_distance_norm_min": 0.80,
+        "index_middle_tip_distance_norm_min": 0.62,#0.80,
 
         "index_mcp_tip_angle_deg_min": -60.0,
-        "index_mcp_tip_angle_deg_max": -18.0,
-        "index_mcp_tip_verticality_min": 0.35,
+        "index_mcp_tip_angle_deg_max": -12.0,#-18.0,
+        "index_mcp_tip_verticality_min": 0.20,#0.35,
         "index_mcp_tip_verticality_max": 0.85,
         "index_mcp_tip_above_base_min": 0.80,
 
-        "thumb_mcp_tip_angle_deg_min": -30.0,
+        "thumb_mcp_tip_angle_deg_min": -32.0,#-30.0,
         "thumb_mcp_tip_angle_deg_max": 15.0,
-        "thumb_mcp_tip_horizontality_min": 0.88,
+        "thumb_mcp_tip_horizontality_min": 0.84,#0.88,
         "thumb_mcp_tip_right_of_base_min": 0.80,
         "thumb_mcp_tip_left_of_base_max": 0.20,
 
-        "thumb_index_axis_angle_3d_deg_min": 12.0,
+        "thumb_index_axis_angle_3d_deg_min": 3.0,#12.0,
         "thumb_index_axis_angle_3d_deg_max": 60.0,
         "thumb_middle_axis_angle_3d_deg_min": 50.0,
         "thumb_middle_axis_angle_3d_deg_max": 105.0,
@@ -427,7 +427,7 @@ STATIC_GEOMETRY_RULES = {
         # de un dedo largo plegado que deforma la mano compacta.
         "index_middle_tip_distance_norm_max": 0.105,
         "middle_ring_tip_distance_norm_max": 0.145,
-        "ring_pinky_tip_distance_norm_max": 0.175,
+        "ring_pinky_tip_distance_norm_max": 0.20,
 
         # Pulgar visible pero integrado al borde de la mano. Un pulgar oculto
         # cae por score bajo/distancia/ejes; un pulgar demasiado separado se
@@ -435,11 +435,11 @@ STATIC_GEOMETRY_RULES = {
         "thumb_index_tip_distance_norm_min": 0.18,
         "thumb_index_tip_distance_norm_max": 0.345,
         "thumb_mcp_tip_angle_deg_min": -88.0,
-        "thumb_mcp_tip_angle_deg_max": -60.0,
-        "thumb_mcp_tip_horizontality_max": 0.52,
+        "thumb_mcp_tip_angle_deg_max": -55.0,
+        "thumb_mcp_tip_horizontality_max": 0.56,
         "thumb_mcp_tip_right_of_base_min": 0.80,
-        "thumb_index_axis_angle_3d_deg_max": 15.0,
-        "thumb_middle_axis_angle_3d_deg_max": 18.0,
+        "thumb_index_axis_angle_3d_deg_max": 20.0,
+        "thumb_middle_axis_angle_3d_deg_max": 25.0,
 
         # Eje ascendente de los dedos. Se rechaza F horizontal y también una
         # versión excesivamente vertical si sale del rango observado.
@@ -461,7 +461,7 @@ STATIC_GEOMETRY_RULES = {
         # Orientación de canto: normal z cercana a cero y positiva leve.
         # El mínimo permite jitter pequeño; el máximo bloquea dorso frontal.
         "use_palm_normal_z": True,
-        "palm_normal_z_approx_min": -0.0002,
+        "palm_normal_z_approx_min": -0.00075,
         "palm_normal_z_approx_max": 0.0022,
 
         # Capa espacial: mano en pecho izquierdo superior/cerca del hombro
@@ -525,12 +525,12 @@ STATIC_GEOMETRY_RULES = {
         #   - anular y meñique cerrados;
         #   - índice y medio separados, sin exigir apertura extrema;
         #   - gesto realizado sobre la región de la cara.
-        "finger_count_min": 2.45,
+        "finger_count_min": 1.80,
         "finger_count_max": 3.35,
 
-        "thumb_extended_score_min": 0.85,
-        "index_extended_score_min": 0.72,
-        "middle_extended_score_min": 0.50,
+        "thumb_extended_score_min": 0.82,
+        "index_extended_score_min": 0.65,
+        "middle_extended_score_min": 0.39,
 
         "ring_extended_score_max": 0.35,
         "pinky_extended_score_max": 0.38,
@@ -539,29 +539,29 @@ STATIC_GEOMETRY_RULES = {
         # Se permite que se vea más por detrás o por delante, siempre que
         # sea claramente activo y conserve la orientación general observada.
         "thumb_index_tip_distance_norm_min": 0.35,
-        "thumb_index_tip_distance_norm_max": 0.80,
+        "thumb_index_tip_distance_norm_max": 0.93,
 
         # Índice y medio deben estar separados, pero se acepta una variante
         # más natural donde no abren tanto como una V exagerada.
-        "index_middle_tip_distance_norm_min": 0.25,
-        "middle_ring_tip_distance_norm_min": 0.50,
+        "index_middle_tip_distance_norm_min": 0.20,
+        "middle_ring_tip_distance_norm_min": 0.42,
         "ring_pinky_tip_distance_norm_max": 0.22,
 
-        "index_middle_axis_angle_3d_deg_min": 20.0,
-        "index_middle_axis_angle_3d_deg_max": 70.0,
+        "index_middle_axis_angle_3d_deg_min": 7.0,
+        "index_middle_axis_angle_3d_deg_max": 75.0,
 
         "thumb_mcp_tip_angle_deg_min": -100.0,
         "thumb_mcp_tip_angle_deg_max": -55.0,
-        "thumb_mcp_tip_right_of_base_min": 0.72,
+        "thumb_mcp_tip_right_of_base_min": 0.40,
 
         # La H rota durante el movimiento; por eso estos rangos son
-        # más amplios que en letras estáticas puras.
+        # más amplios que en letras estaticas puras.
         "index_mcp_tip_angle_deg_min": -80.0,
         "index_mcp_tip_angle_deg_max": -15.0,
         "index_mcp_tip_above_base_min": 0.58,
 
-        "middle_mcp_tip_angle_deg_min": -50.0,
-        "middle_mcp_tip_angle_deg_max": 35.0,
+        "middle_mcp_tip_angle_deg_min": -55.0,
+        "middle_mcp_tip_angle_deg_max": 55.0,
         "middle_mcp_tip_right_of_base_min": 0.80,
 
         # Capa espacial: H debe ejecutarse sobre la cara, no en el pecho
@@ -594,7 +594,7 @@ STATIC_GEOMETRY_RULES = {
         "finger_count_min": 0.85,
         "finger_count_max": 2.10,
 
-        "index_extended_score_min": 0.90,
+        "index_extended_score_min": 0.80,
         "middle_extended_score_max": 0.35,
         "ring_extended_score_max": 0.40,
         "pinky_extended_score_max": 0.42,
@@ -606,15 +606,15 @@ STATIC_GEOMETRY_RULES = {
         # Índice casi vertical hacia arriba. El negativo diagonal hacia nariz
         # cayó cerca de -65° y verticality 0.91, por eso se exige más verticalidad.
         "index_mcp_tip_angle_deg_min": -92.0,
-        "index_mcp_tip_angle_deg_max": -72.0,
-        "index_mcp_tip_verticality_min": 0.95,
+        "index_mcp_tip_angle_deg_max": -60.0,
+        "index_mcp_tip_verticality_min": 0.86,
         "index_mcp_tip_above_base_min": 0.80,
 
         # Pulgar no protagonista. En I correcta el pulgar puede aparecer visible,
         # pero no debe abrirse como L. Estos criterios separan i_thumb_open_l_like.
         "thumb_extended_score_max": 0.80,
         "thumb_mcp_tip_angle_deg_min": -70.0,
-        "thumb_mcp_tip_angle_deg_max": -10.0,
+        "thumb_mcp_tip_angle_deg_max": 5.0,
         "thumb_mcp_tip_right_of_base_min": 0.70,
 
         # Capa espacial: I debe ubicarse en pómulo/mejilla derecha. La punta
@@ -651,16 +651,16 @@ STATIC_GEOMETRY_RULES = {
         # MediaPipe no ve esta mano lateral como "5 dedos extendidos":
         # los positivos correctos se agruparon cerca de 3 dedos visibles.
         "finger_count_min": 2.50,
-        "finger_count_max": 4.20,
+        "finger_count_max": 5.00,
 
-        "index_extended_score_min": 0.52,
+        "index_extended_score_min": 0.48,
         "middle_extended_score_min": 0.52,
         "ring_extended_score_min": 0.52,
         "pinky_extended_score_min": 0.52,
 
         # Dedos largos juntos y casi paralelos.
-        "index_middle_tip_distance_norm_max": 0.080,
-        "middle_ring_tip_distance_norm_max": 0.055,
+        "index_middle_tip_distance_norm_max": 0.082,
+        "middle_ring_tip_distance_norm_max": 0.082,
         "ring_pinky_tip_distance_norm_max": 0.170,
         "index_middle_axis_angle_3d_deg_max": 8.0,
 
@@ -670,14 +670,14 @@ STATIC_GEOMETRY_RULES = {
         "thumb_index_tip_distance_norm_min": 0.25,
         "thumb_index_tip_distance_norm_max": 0.60,
         "thumb_mcp_tip_angle_deg_min": -75.0,
-        "thumb_mcp_tip_angle_deg_max": -32.0,
+        "thumb_mcp_tip_angle_deg_max": 5.0,
 
         # La mano está lateral y los dedos apuntan aproximadamente en la
         # orientación observada durante el recorrido bajo la mandíbula.
         "index_mcp_tip_angle_deg_min": -30.0,
-        "index_mcp_tip_angle_deg_max": 15.0,
+        "index_mcp_tip_angle_deg_max": 23.0,
         "middle_mcp_tip_angle_deg_min": -32.0,
-        "middle_mcp_tip_angle_deg_max": 15.0,
+        "middle_mcp_tip_angle_deg_max": 23.0,
 
         # Capa espacial: J debe ejecutarse sobre la zona de mentón/mandíbula,
         # no en el pecho, no al costado del cuerpo y no frente a la cara sin
@@ -728,25 +728,25 @@ STATIC_GEOMETRY_RULES = {
 
         # Pulgar compacto/no protagonista. El score del pulgar puede ser alto,
         # por eso se controla más por distancia, ángulo y horizontalidad.
-        "thumb_index_tip_distance_norm_min": 0.18,
+        "thumb_index_tip_distance_norm_min": 0.11,
         "thumb_index_tip_distance_norm_max": 0.55,
         "thumb_mcp_tip_angle_deg_min": -100, #-96.0,
-        "thumb_mcp_tip_angle_deg_max": -68.0,
-        "thumb_mcp_tip_horizontality_max": 0.32,
+        "thumb_mcp_tip_angle_deg_max": -52.0,
+        "thumb_mcp_tip_horizontality_max": 0.59,
 
         # Dedos recogidos apuntando hacia abajo/lateral en la orientación
         # observada. Esto ayuda a rechazar índice extendido, mano abierta,
         # pulgar abierto y meñique orientado hacia la cara.
-        "index_mcp_tip_angle_deg_min": 25.0, #38.0,
-        "index_mcp_tip_angle_deg_max": 72.0,
+        "index_mcp_tip_angle_deg_min": 19.0, #38.0,
+        "index_mcp_tip_angle_deg_max": 76.0,
         "middle_mcp_tip_angle_deg_min": 50.0,
-        "middle_mcp_tip_angle_deg_max": 78.0,
-        "middle_mcp_tip_horizontality_max": 0.58,
+        "middle_mcp_tip_angle_deg_max": 79.0,
+        "middle_mcp_tip_horizontality_max": 0.60,
 
         # Con la orientación correcta de Z, palm_normal_z quedó negativa.
         # La variante con meñique hacia la cara invirtió este signo.
         "use_palm_normal_z": True,
-        "palm_normal_z_approx_max": 0.001,
+        "palm_normal_z_approx_max": 0.0016,
     },
 
     "Y": {
@@ -766,7 +766,7 @@ STATIC_GEOMETRY_RULES = {
         "finger_count_max": 2.25,
 
         "thumb_extended_score_min": 0.90,
-        "pinky_extended_score_min": 0.88,
+        "pinky_extended_score_min": 0.85,
 
         "index_extended_score_max": 0.32,
         "middle_extended_score_max": 0.35,
@@ -774,14 +774,14 @@ STATIC_GEOMETRY_RULES = {
 
         # Apertura característica entre pulgar y meñique. Ayuda a rechazar
         # falta de pulgar, mano abierta y configuraciones compactas.
-        "thumb_pinky_tip_distance_norm_min": 1.00,
+        "thumb_pinky_tip_distance_norm_min": 0.75,
         "ring_pinky_tip_distance_norm_min": 0.55,
 
         # Pulgar extendido hacia el lado observado en la cámara actual.
         # En y_no_thumb el score puede quedar medio-alto por ruido, por eso
         # se combina score + orientación + lateralidad.
         "thumb_mcp_tip_angle_deg_min": -122.0,
-        "thumb_mcp_tip_angle_deg_max": -96.0,
+        "thumb_mcp_tip_angle_deg_max": -90.0,
         "thumb_mcp_tip_left_of_base_min": 0.80,
 
         # Meñique extendido en diagonal ascendente, no cerrado ni reemplazado
@@ -850,13 +850,13 @@ STATIC_GEOMETRY_RULES = {
         # Separaciones características de índice/meñique extendidos con
         # medio/anular cerrados. Ayudan a rechazar índice+medio, mano abierta
         # y medio extra abierto.
-        "index_middle_tip_distance_norm_min": 0.85,
+        "index_middle_tip_distance_norm_min": 0.76,
 
-        "ring_pinky_tip_distance_norm_min": 0.55,
+        "ring_pinky_tip_distance_norm_min": 0.47,
         "ring_pinky_tip_distance_norm_max": 0.90,
 
-        "index_pinky_tip_distance_norm_min": 0.60,
-        "index_pinky_tip_distance_norm_max": 0.85,
+        "index_pinky_tip_distance_norm_min": 0.50,
+        "index_pinky_tip_distance_norm_max": 0.89,
 
         "thumb_pinky_tip_distance_norm_min": 0.38,
         "thumb_pinky_tip_distance_norm_max": 0.75,
@@ -865,7 +865,7 @@ STATIC_GEOMETRY_RULES = {
         # Si se usa otra mano o cámara espejada, esta lateralidad puede
         # requerir ajuste.
         "thumb_mcp_tip_angle_deg_min": -75.0,
-        "thumb_mcp_tip_angle_deg_max": -35.0,
+        "thumb_mcp_tip_angle_deg_max": -31.0,
         "thumb_mcp_tip_right_of_base_min": 0.70,
         "thumb_mcp_tip_left_of_base_max": 0.20,
     },
@@ -943,7 +943,7 @@ STATIC_GEOMETRY_RULES = {
         "min_valid_ratio": 0.80,
 
         # W correcta según el dataset actual:
-        #   - letra estática de dos manos;
+        #   - letra estatica de dos manos;
         #   - cada mano tiene una forma equivalente a U:
         #       índice y meñique extendidos, medio/anular recogidos,
         #       pulgar no protagonista;
@@ -1027,7 +1027,7 @@ STATIC_GEOMETRY_RULES = {
         "min_valid_ratio": 0.80,
 
         # X correcta según el dataset actual:
-        #   - letra estática de dos manos;
+        #   - letra estatica de dos manos;
         #   - ambas manos en puño/casi puño;
         #   - solo los índices son protagonistas;
         #   - medio, anular y meñique deben quedar recogidos;
@@ -1047,7 +1047,7 @@ STATIC_GEOMETRY_RULES = {
         "finger_count_min": 0.85, #0.95,
         "finger_count_max": 2.35,
 
-        "index_extended_score_min": 0.72,
+        "index_extended_score_min": 0.62,
         "middle_extended_score_max": 0.32,
         "ring_extended_score_max": 0.34,
         "pinky_extended_score_max": 0.42, #0.35,
@@ -1056,8 +1056,8 @@ STATIC_GEOMETRY_RULES = {
         # El índice queda diagonal hacia el centro, no vertical como I/U
         # ni casi horizontal por orientación incorrecta.
         "index_mcp_tip_angle_deg_min": -65.0,
-        "index_mcp_tip_angle_deg_max": -25.0,
-        "index_mcp_tip_verticality_min": 0.50,
+        "index_mcp_tip_angle_deg_max": -23.0,
+        "index_mcp_tip_verticality_min": 0.39,
         "index_mcp_tip_above_base_min": 0.80,
 
         # En X correcta el pulgar queda relativamente separado del índice.
@@ -1068,7 +1068,7 @@ STATIC_GEOMETRY_RULES = {
         # Orientación esperada de la mano primaria en la cámara actual.
         # En los positivos quedó con normal z positiva; una orientación
         # invertida/rotada tiende a cambiar este signo.
-        "palm_normal_z_approx_min": 0.0,
+        "palm_normal_z_approx_min": -0.0015,
 
         # Mano secundaria. No se fuerza ángulo 2D específico porque la
         # mano espejada puede aparecer con valores angulares muy distintos
@@ -1087,7 +1087,7 @@ STATIC_GEOMETRY_RULES = {
 
         # Orientación esperada de la mano secundaria en la cámara actual.
         # En los positivos quedó con normal z negativa.
-        "secondary_palm_normal_z_approx_max": 0.0,
+        "secondary_palm_normal_z_approx_max": 0.0041,
 
         # Relación entre manos:
         #   - los segmentos MCP->TIP de ambos índices deben cruzarse;
@@ -1129,13 +1129,13 @@ STATIC_GEOMETRY_RULES = {
 
         # Dedos largos descendentes. En coordenadas de imagen, ángulos positivos
         # cercanos a 90° indican que la punta queda por debajo de la base.
-        "index_mcp_tip_angle_deg_min": 65.0,
+        "index_mcp_tip_angle_deg_min": 54.0,#65.0,
         "index_mcp_tip_angle_deg_max": 105.0,
-        "index_mcp_tip_verticality_min": 0.90,
+        "index_mcp_tip_verticality_min": 0.81,#0.90,
         "index_mcp_tip_below_base_min": 0.80,
         "index_mcp_tip_above_base_max": 0.20,
 
-        "middle_mcp_tip_angle_deg_min": 70.0,
+        "middle_mcp_tip_angle_deg_min": 69.0,#70.0,
         "middle_mcp_tip_angle_deg_max": 105.0,
         "middle_mcp_tip_below_base_min": 0.80,
 
@@ -1161,7 +1161,7 @@ STATIC_GEOMETRY_RULES = {
         #     aprox. entre 89° y 105°.
         "thumb_index_tip_distance_norm_max": 0.45,
         "thumb_mcp_tip_horizontality_max": 0.40,
-        "thumb_mcp_tip_angle_deg_min": 86.0, #82.0,
+        "thumb_mcp_tip_angle_deg_min": 81.0, #86.0,
         "thumb_mcp_tip_angle_deg_max": 115.0,
 
         # Dorso/orientación compatible. La variante con palma/orientación
@@ -1194,14 +1194,14 @@ STATIC_GEOMETRY_RULES = {
         "index_extended_score_min": 0.90,
         "middle_extended_score_min": 0.90,
 
-        "ring_extended_score_max": 0.25,
+        "ring_extended_score_max": 0.38,#0.25,
         "pinky_extended_score_max": 0.35,
 
         # Índice y medio descendentes. En coordenadas de imagen, ángulos positivos
         # cercanos a 90° indican que la punta queda por debajo de la base.
-        "index_mcp_tip_angle_deg_min": 70.0,
+        "index_mcp_tip_angle_deg_min": 60.0,#70.0,
         "index_mcp_tip_angle_deg_max": 108.0,
-        "index_mcp_tip_verticality_min": 0.88,
+        "index_mcp_tip_verticality_min": 0.87,
         "index_mcp_tip_below_base_min": 0.80,
         "index_mcp_tip_above_base_max": 0.20,
 
@@ -1215,8 +1215,8 @@ STATIC_GEOMETRY_RULES = {
         #   - medio y anular deben quedar bien separados porque el anular está recogido;
         #   - anular y meñique deben quedar compactos.
         "index_middle_tip_distance_norm_min": 0.13,
-        "index_middle_tip_distance_norm_max": 0.30,
-        "middle_ring_tip_distance_norm_min": 0.55,
+        "index_middle_tip_distance_norm_max": 0.37,
+        "middle_ring_tip_distance_norm_min": 0.50,
         "ring_pinky_tip_distance_norm_max": 0.13,
 
         # Pulgar visible pero no sobresalido/protagonista.
@@ -1235,7 +1235,7 @@ STATIC_GEOMETRY_RULES = {
         "min_valid_ratio": 0.80,
 
         # Ñ correcta según el dataset actual:
-        #   - letra estática de dos manos;
+        #   - letra estatica de dos manos;
         #   - la mano primaria mantiene la base de N:
         #       índice y medio extendidos hacia abajo,
         #       anular y meñique recogidos,
@@ -1253,7 +1253,7 @@ STATIC_GEOMETRY_RULES = {
         "expected_hands_min": 1.0,
 
         # Mano primaria: base N.
-        "finger_count_min": 2.70,
+        "finger_count_min": 2.60,
         "finger_count_max": 3.30,
 
         "index_extended_score_min": 0.90,
@@ -1264,17 +1264,17 @@ STATIC_GEOMETRY_RULES = {
 
         "index_mcp_tip_angle_deg_min": 70.0,
         "index_mcp_tip_angle_deg_max": 108.0,
-        "index_mcp_tip_verticality_min": 0.88,
+        "index_mcp_tip_verticality_min": 0.84,
         "index_mcp_tip_below_base_min": 0.80,
         "index_mcp_tip_above_base_max": 0.20,
 
-        "middle_mcp_tip_angle_deg_min": 82.0,
+        "middle_mcp_tip_angle_deg_min": 50.0,#82.0,
         "middle_mcp_tip_angle_deg_max": 110.0,
-        "middle_mcp_tip_below_base_min": 0.80,
+        "middle_mcp_tip_below_base_min": 0.78,
         "middle_mcp_tip_horizontality_max": 0.35,
 
         "index_middle_tip_distance_norm_min": 0.13,
-        "index_middle_tip_distance_norm_max": 0.34,
+        "index_middle_tip_distance_norm_max": 0.37,
         "middle_ring_tip_distance_norm_min": 0.54,
         "ring_pinky_tip_distance_norm_max": 0.13,
 
@@ -1342,55 +1342,55 @@ STATIC_GEOMETRY_RULES = {
         "finger_count_min": 3.60,
         "finger_count_max": 4.35,
 
-        "thumb_extended_score_min": 0.85,
+        "thumb_extended_score_min": 0.75,
         "index_extended_score_max": 0.35,
-        "middle_extended_score_min": 0.85,
+        "middle_extended_score_min": 0.74,
         "ring_extended_score_min": 0.85,
         "pinky_extended_score_min": 0.85,
 
         # Cierre circular pulgar-índice.
-        "thumb_index_tip_distance_norm_min": 0.045,
+        "thumb_index_tip_distance_norm_min": 0.030,
         "thumb_index_tip_distance_norm_max": 0.120,
 
         # Índice curvado hacia el pulgar y separado de los dedos largos.
-        "index_middle_tip_distance_norm_min": 0.45,
+        "index_middle_tip_distance_norm_min": 0.34,
         "index_middle_tip_distance_norm_max": 0.68, #0.66,
 
         # Medio, anular y meñique abiertos/naturales.
-        "middle_ring_tip_distance_norm_min": 0.075, #0.080,
-        "ring_pinky_tip_distance_norm_min": 0.165, # 0.190,
+        "middle_ring_tip_distance_norm_min": 0.045, #0.080,
+        "ring_pinky_tip_distance_norm_min": 0.13, # 0.190,
         "ring_pinky_tip_distance_norm_max": 0.290,
 
         # Índice curvado formando la parte superior de la O, no extendido
         # hacia arriba ni aplastado horizontalmente como pinza.
-        "index_mcp_tip_angle_deg_min": 0.0,
-        "index_mcp_tip_angle_deg_max": 35.0, #30.0,
-        "index_mcp_tip_verticality_max": 0.60, #0.50,
-        "index_mcp_tip_above_base_max": 0.20,
+        "index_mcp_tip_angle_deg_min": -20.0,
+        "index_mcp_tip_angle_deg_max": 46.0, #30.0,
+        "index_mcp_tip_verticality_max": 0.72, #0.50,
+        "index_mcp_tip_above_base_max": 1.00,
 
         # Dedo medio extendido hacia arriba en la orientación observada.
         "middle_mcp_tip_angle_deg_min": -88.0,
-        "middle_mcp_tip_angle_deg_max": -65.0,
-        "middle_mcp_tip_horizontality_max": 0.38,
+        "middle_mcp_tip_angle_deg_max": -41.0,
+        "middle_mcp_tip_horizontality_max": 0.75,
 
         # Pulgar diagonal hacia el índice, no completamente horizontal
         # como apertura C/pinza ni oculto por orientación incorrecta.
-        "thumb_mcp_tip_angle_deg_min": -70.0,
-        "thumb_mcp_tip_angle_deg_max": -40.0,
-        "thumb_mcp_tip_horizontality_min": 0.35, # 0.40,
-        "thumb_mcp_tip_horizontality_max": 0.75,
+        "thumb_mcp_tip_angle_deg_min": -71.0,
+        "thumb_mcp_tip_angle_deg_max": -20.0,
+        "thumb_mcp_tip_horizontality_min": 0.33, # 0.40,
+        "thumb_mcp_tip_horizontality_max": 0.94,
         "thumb_mcp_tip_right_of_base_min": 0.80,
 
         # Relaciones de ejes útiles para separar O circular de pinza,
         # palma frontal, dorso y dedos largos tipo B.
-        "index_middle_axis_angle_3d_deg_min": 65.0,
-        "index_middle_axis_angle_3d_deg_max": 102.0, #97.0,
+        "index_middle_axis_angle_3d_deg_min": 47.0,
+        "index_middle_axis_angle_3d_deg_max": 104.0, #97.0,
 
-        "thumb_index_axis_angle_3d_deg_min": 55.0,
-        "thumb_index_axis_angle_3d_deg_max": 72.0,
+        "thumb_index_axis_angle_3d_deg_min": 50.0,
+        "thumb_index_axis_angle_3d_deg_max": 80.0,
 
-        "thumb_middle_axis_angle_3d_deg_min": 8.0,
-        "thumb_middle_axis_angle_3d_deg_max": 36.0,
+        "thumb_middle_axis_angle_3d_deg_min": 2.0,
+        "thumb_middle_axis_angle_3d_deg_max": 48.0,
 
         # En la O correcta actual la orientación queda con normal z negativa;
         # la variante con más dorso visible invierte el signo.
@@ -1402,7 +1402,7 @@ STATIC_GEOMETRY_RULES = {
         "min_valid_ratio": 0.80,
 
         # Q correcta según el dataset actual:
-        #   - letra estática de dos manos;
+        #   - letra estatica de dos manos;
         #   - mano primaria equivalente a O: pulgar e índice se tocan
         #     formando el círculo, con medio/anular/meñique extendidos
         #     o semi-extendidos;
@@ -1430,9 +1430,9 @@ STATIC_GEOMETRY_RULES = {
 
         "thumb_extended_score_min": 0.85,
         "index_extended_score_max": 0.35,
-        "middle_extended_score_min": 0.85,
-        "ring_extended_score_min": 0.85,
-        "pinky_extended_score_min": 0.85,
+        "middle_extended_score_min": 0.71,
+        "ring_extended_score_min": 0.68,
+        "pinky_extended_score_min": 0.65,
 
         # Cierre circular pulgar-índice en mano primaria.
         # El máximo rechaza O abierta; el mínimo ayuda a rechazar pinza
@@ -1442,48 +1442,48 @@ STATIC_GEOMETRY_RULES = {
 
         # Índice curvado separado de los dedos largos.
         # En Q puede aumentar por el contacto con la segunda mano.
-        "index_middle_tip_distance_norm_min": 0.45,
+        "index_middle_tip_distance_norm_min": 0.33,
         "index_middle_tip_distance_norm_max": 0.82,
 
         # Medio, anular y meñique abiertos/naturales.
         # Se deja un poco más de margen que en O por variación live.
-        "middle_ring_tip_distance_norm_min": 0.075,
-        "ring_pinky_tip_distance_norm_min": 0.160,
-        "ring_pinky_tip_distance_norm_max": 0.320,
+        "middle_ring_tip_distance_norm_min": 0.06,
+        "ring_pinky_tip_distance_norm_min": 0.12,
+        "ring_pinky_tip_distance_norm_max": 0.42,
 
         # Índice de la O primaria. En Q puede quedar más inclinado/vertical
         # que en O aislada por el apoyo del índice secundario.
-        "index_mcp_tip_angle_deg_min": 0.0,
+        "index_mcp_tip_angle_deg_min": -14.0,
         "index_mcp_tip_angle_deg_max": 62.0,
         "index_mcp_tip_verticality_max": 0.90,
-        "index_mcp_tip_above_base_max": 0.20,
+        "index_mcp_tip_above_base_max": 1.00,
 
         # Dedo medio extendido hacia arriba, con más tolerancia que O aislada
         # porque la mano puede rotar levemente al recibir la cola.
         "middle_mcp_tip_angle_deg_min": -88.0,
-        "middle_mcp_tip_angle_deg_max": -55.0,
-        "middle_mcp_tip_horizontality_max": 0.58,
+        "middle_mcp_tip_angle_deg_max": -38.0,
+        "middle_mcp_tip_horizontality_max": 0.66,
 
         # Pulgar de la O primaria. Se permite más horizontalidad que en O,
         # pero se mantiene límite para bloquear pinza aplastada y variantes
         # donde el pulgar queda demasiado plano.
         "thumb_mcp_tip_angle_deg_min": -70.0,
-        "thumb_mcp_tip_angle_deg_max": -18.0,
+        "thumb_mcp_tip_angle_deg_max": 5.0,
         "thumb_mcp_tip_horizontality_min": 0.35,
-        "thumb_mcp_tip_horizontality_max": 0.96,
+        "thumb_mcp_tip_horizontality_max": 1.00,
         "thumb_mcp_tip_right_of_base_min": 0.80,
 
         # Relaciones de ejes. Se amplían respecto de O porque en Q la segunda
         # mano altera la estimación, pero se mantienen límites para rechazar
         # O abierta, pinza aplastada y orientaciones incorrectas.
-        "index_middle_axis_angle_3d_deg_min": 65.0,
+        "index_middle_axis_angle_3d_deg_min": 47.0,
         "index_middle_axis_angle_3d_deg_max": 110.0,
 
-        "thumb_index_axis_angle_3d_deg_min": 58.0,
+        "thumb_index_axis_angle_3d_deg_min": 40.0,
         "thumb_index_axis_angle_3d_deg_max": 82.0,
 
-        "thumb_middle_axis_angle_3d_deg_min": 8.0,
-        "thumb_middle_axis_angle_3d_deg_max": 47.0,
+        "thumb_middle_axis_angle_3d_deg_min": 3.0,
+        "thumb_middle_axis_angle_3d_deg_max": 58.0,
 
         # Misma orientación general que O: normal z negativa en la cámara actual.
         "use_palm_normal_z": True,
@@ -1502,16 +1502,16 @@ STATIC_GEOMETRY_RULES = {
         "secondary_middle_extended_score_max": 0.42,
         "secondary_ring_extended_score_max": 0.38,
         "secondary_pinky_extended_score_max": 0.38,
-        "secondary_thumb_extended_score_max": 0.88,
+        "secondary_thumb_extended_score_max": 0.91,
 
         # Índice secundario diagonal. Se bloquean variantes verticales y
         # horizontales aunque la punta se acerque al círculo.
-        "secondary_index_mcp_tip_angle_deg_min": -152.0,
-        "secondary_index_mcp_tip_angle_deg_max": -118.0,
+        "secondary_index_mcp_tip_angle_deg_min": -153.0,
+        "secondary_index_mcp_tip_angle_deg_max": -117.0,
         "secondary_index_mcp_tip_verticality_min": 0.45,
-        "secondary_index_mcp_tip_verticality_max": 0.88,
+        "secondary_index_mcp_tip_verticality_max": 0.89,
         "secondary_index_mcp_tip_horizontality_min": 0.45,
-        "secondary_index_mcp_tip_horizontality_max": 0.88,
+        "secondary_index_mcp_tip_horizontality_max": 0.89,
 
         # Relación entre manos: la punta del índice secundario debe tocar
         # o quedar muy próxima al punto de unión pulgar-índice de la O primaria.
@@ -1542,7 +1542,7 @@ STATIC_GEOMETRY_RULES = {
         "finger_count_min": 1.70,
         "finger_count_max": 2.35,
 
-        "thumb_extended_score_min": 0.88,
+        "thumb_extended_score_min": 0.87,
         "index_extended_score_min": 0.60,
 
         "middle_extended_score_max": 0.38,
@@ -1624,7 +1624,7 @@ STATIC_GEOMETRY_RULES = {
         "thumb_extended_score_max": 0.85,
         "index_extended_score_min": 0.90,
         "middle_extended_score_max": 0.20,
-        "ring_extended_score_max": 0.20,
+        "ring_extended_score_max": 0.21,
         "pinky_extended_score_max": 0.22,
 
         # El índice extendido debe quedar claramente separado de los dedos
@@ -1633,15 +1633,15 @@ STATIC_GEOMETRY_RULES = {
 
         # Índice vertical/recto sobre la barbilla.
         "index_mcp_tip_angle_deg_min": -92.0,
-        "index_mcp_tip_angle_deg_max": -82.0,
-        "index_mcp_tip_verticality_min": 0.99,
+        "index_mcp_tip_angle_deg_max": -78.0,
+        "index_mcp_tip_verticality_min": 0.97,
         "index_mcp_tip_above_base_min": 0.80,
 
         # Orientación de dorso hacia cámara. Palma frontal invierte el signo;
         # mano de canto/lateral baja demasiado la normal z.
         "use_palm_normal_z": True,
         "palm_normal_z_approx_min": 0.0035,
-        "palm_normal_z_approx_max": 0.0065,
+        "palm_normal_z_approx_max": 0.0092,
 
         # Señal complementaria para rechazar palma/lateral cuando el signo de
         # normal z no alcanza por sí solo o hay jitter.
@@ -1667,15 +1667,15 @@ STATIC_GEOMETRY_RULES = {
         "finger_count_min": 1.80,
         "finger_count_max": 2.20,
 
-        "thumb_extended_score_min": 0.80,
-        "index_extended_score_min": 0.90,
+        "thumb_extended_score_min": 0.79,#0.80,
+        "index_extended_score_min": 0.88,#0.90,
 
         "middle_extended_score_max": 0.55,
         "ring_extended_score_max": 0.55,
         "pinky_extended_score_max": 0.55,
 
-        "thumb_index_tip_distance_norm_min": 1.40,
-        "thumb_index_angle_deg_min": 50.0,
+        "thumb_index_tip_distance_norm_min": 1.12,#1.40,
+        "thumb_index_angle_deg_min": 34.0,#50.0,
         "thumb_index_angle_deg_max": 85.0,
 
         "index_mcp_tip_angle_deg_min": -110.0,
@@ -1683,9 +1683,9 @@ STATIC_GEOMETRY_RULES = {
         "index_mcp_tip_verticality_min": 0.95,
         "index_mcp_tip_above_base_min": 0.80,
 
-        "thumb_mcp_tip_angle_deg_min": -25.0,
+        "thumb_mcp_tip_angle_deg_min": -38.0,#-25.0,
         "thumb_mcp_tip_angle_deg_max": 25.0,
-        "thumb_mcp_tip_horizontality_min": 0.90,
+        "thumb_mcp_tip_horizontality_min": 0.79,#0.90,
         "thumb_mcp_tip_right_of_base_min": 0.80,
         "thumb_mcp_tip_left_of_base_max": 0.20,
 
@@ -1703,7 +1703,7 @@ STATIC_GEOMETRY_RULES = {
         # En la K actual el conteo global sigue dando 2,
         # aun cuando el medio esté visualmente extendido en otro plano.
         "finger_count_min": 1.80,
-        "finger_count_max": 2.20,
+        "finger_count_max": 3.10,
 
         "thumb_extended_score_min": 0.84,
         "index_extended_score_min": 0.70,
@@ -1717,8 +1717,8 @@ STATIC_GEOMETRY_RULES = {
         "thumb_index_tip_distance_norm_max": 0.62,
 
         # Apertura índice-medio de la K real.
-        "index_middle_tip_distance_norm_min": 0.62,
-        "index_middle_tip_distance_norm_max": 0.95,
+        "index_middle_tip_distance_norm_min": 0.58,
+        "index_middle_tip_distance_norm_max": 1.13,
 
         # Anular y meñique cerrados/compactos.
         "middle_ring_tip_distance_norm_min": 0.45,
@@ -1732,13 +1732,13 @@ STATIC_GEOMETRY_RULES = {
 
         # Medio casi horizontal hacia la derecha.
         "middle_mcp_tip_angle_deg_min": -15.0,
-        "middle_mcp_tip_angle_deg_max": 15.0,
-        "middle_mcp_tip_horizontality_min": 0.90,
+        "middle_mcp_tip_angle_deg_max": 35.0,
+        "middle_mcp_tip_horizontality_min": 0.82,
         "middle_mcp_tip_right_of_base_min": 0.80,
 
         # Pulgar visible en el vértice, en la orientación observada.
         "thumb_mcp_tip_angle_deg_min": -100.0,
-        "thumb_mcp_tip_angle_deg_max": -65.0,
+        "thumb_mcp_tip_angle_deg_max": -58.0,
         "thumb_mcp_tip_right_of_base_min": 0.70,
 
         # Relaciones de ejes entre dedos. Estas son claves para separar:
@@ -1746,11 +1746,11 @@ STATIC_GEOMETRY_RULES = {
         # - apertura demasiado cerrada;
         # - orientación tipo L/V;
         # - pulgar mal ubicado.
-        "index_middle_axis_angle_3d_deg_min": 50.0,
-        "index_middle_axis_angle_3d_deg_max": 72.0,
+        "index_middle_axis_angle_3d_deg_min": 45.0,
+        "index_middle_axis_angle_3d_deg_max": 102.0,
         "thumb_index_axis_angle_3d_deg_max": 24.0,
-        "thumb_middle_axis_angle_3d_deg_min": 65.0,
-        "thumb_middle_axis_angle_3d_deg_max": 95.0,
+        "thumb_middle_axis_angle_3d_deg_min": 52.0,
+        "thumb_middle_axis_angle_3d_deg_max": 108.0,
     },
 
     "R": {
@@ -1762,8 +1762,8 @@ STATIC_GEOMETRY_RULES = {
         "finger_count_min": 2.70,
         "finger_count_max": 3.30,
 
-        "index_extended_score_min": 0.82,
-        "middle_extended_score_min": 0.88,
+        "index_extended_score_min": 0.75,
+        "middle_extended_score_min": 0.86,
 
         "ring_extended_score_max": 0.30,
         "pinky_extended_score_max": 0.32,
@@ -1774,8 +1774,8 @@ STATIC_GEOMETRY_RULES = {
 
         # El medio debe separarse claramente de anular, mientras anular
         # y meñique permanecen recogidos/compactos.
-        "middle_ring_tip_distance_norm_min": 0.58,
-        "ring_pinky_tip_distance_norm_max": 0.13,
+        "middle_ring_tip_distance_norm_min": 0.56,
+        "ring_pinky_tip_distance_norm_max": 0.15,
 
         # Índice y medio apuntan hacia arriba, casi paralelos.
         "index_mcp_tip_angle_deg_min": -100.0,
@@ -1792,18 +1792,18 @@ STATIC_GEOMETRY_RULES = {
         # El medio debe envolver/cruzar al índice, no quedar solo pegado
         # en paralelo. Se mide el rango lateral firmado de MCP/PIP/DIP/TIP
         # del dedo medio respecto del eje MCP->TIP del índice.
-        "middle_index_axis_signed_range_min": 0.060,
+        "middle_index_axis_signed_range_min": 0.050,
 
         # En esta R, el pulgar está doblado y apoyado sobre el anular.
         # La posición lateral y el ángulo respecto al medio son más
         # estables que thumb_extended_score.
-        "thumb_mcp_tip_left_of_base_min": 0.80,
-        "thumb_mcp_tip_right_of_base_max": 0.20,
+        "thumb_mcp_tip_left_of_base_min": 0.00,
+        "thumb_mcp_tip_right_of_base_max": 1.00,
         "thumb_mcp_tip_angle_deg_min": -115.0,
-        "thumb_mcp_tip_angle_deg_max": -95.0,
-        "thumb_index_axis_angle_3d_deg_min": 10.0,
+        "thumb_mcp_tip_angle_deg_max": -72.0,
+        "thumb_index_axis_angle_3d_deg_min": 1.0,
         "thumb_index_axis_angle_3d_deg_max": 25.0,
-        "thumb_middle_axis_angle_3d_deg_min": 20.0,
+        "thumb_middle_axis_angle_3d_deg_min": 4.0,
         "thumb_middle_axis_angle_3d_deg_max": 32.0,
     },
 }
@@ -8823,11 +8823,11 @@ def _build_result(
 
     if message is None:
         if not required:
-            message = "Validación geométrica estática no requerida."
+            message = "Validacion geometrica estatica no requerida."
         elif ok:
             if normalized_label == "A":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
                     f"thumb={metrics.get('thumb_extended_score', np.nan):.3f}, "
@@ -8840,7 +8840,7 @@ def _build_result(
                 )
             elif normalized_label == "B":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
                     f"thumb={metrics.get('thumb_extended_score', np.nan):.3f}, "
@@ -8856,7 +8856,7 @@ def _build_result(
                 )
             elif normalized_label == "C":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
                     f"thumb={metrics.get('thumb_extended_score', np.nan):.3f}, "
@@ -8872,7 +8872,7 @@ def _build_result(
                 )
             elif normalized_label == "D":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
                     f"thumb={metrics.get('thumb_extended_score', np.nan):.3f}, "
@@ -8886,7 +8886,7 @@ def _build_result(
                 )
             elif normalized_label == "E":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
                     f"thumb={metrics.get('thumb_extended_score', np.nan):.3f}, "
@@ -8899,7 +8899,7 @@ def _build_result(
                 )
             elif normalized_label == "F":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
                     f"thumb={metrics.get('thumb_extended_score', np.nan):.3f}, "
@@ -8915,7 +8915,7 @@ def _build_result(
                 )
             elif normalized_label == "G":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
                     f"thumb={metrics.get('thumb_extended_score', np.nan):.3f}, "
@@ -8930,7 +8930,7 @@ def _build_result(
                 )
             elif normalized_label == "H":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
                     f"thumb={metrics.get('thumb_extended_score', np.nan):.3f}, "
@@ -8947,7 +8947,7 @@ def _build_result(
                 )
             elif normalized_label == "I":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
                     f"index={metrics.get('index_extended_score', np.nan):.3f}, "
@@ -8962,7 +8962,7 @@ def _build_result(
                 )
             elif normalized_label == "J":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
                     f"index={metrics.get('index_extended_score', np.nan):.3f}, "
@@ -8977,7 +8977,7 @@ def _build_result(
                 )
             elif normalized_label == "Y":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
                     f"thumb={metrics.get('thumb_extended_score', np.nan):.3f}, "
@@ -8991,7 +8991,7 @@ def _build_result(
                 )
             elif normalized_label == "M":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
                     f"thumb={metrics.get('thumb_extended_score', np.nan):.3f}, "
@@ -9007,7 +9007,7 @@ def _build_result(
                 )
             elif normalized_label == "N":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
                     f"thumb={metrics.get('thumb_extended_score', np.nan):.3f}, "
@@ -9025,7 +9025,7 @@ def _build_result(
                 )
             elif normalized_label == "Ñ":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"secondary_valid={metrics.get('secondary_valid_ratio', np.nan):.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
@@ -9044,7 +9044,7 @@ def _build_result(
                 )
             elif normalized_label == "O":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
                     f"thumb={metrics.get('thumb_extended_score', np.nan):.3f}, "
@@ -9062,7 +9062,7 @@ def _build_result(
                 )
             elif normalized_label == "Q":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"secondary_valid={metrics.get('secondary_valid_ratio', np.nan):.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
@@ -9080,7 +9080,7 @@ def _build_result(
                 )
             elif normalized_label == "V":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
                     f"thumb={metrics.get('thumb_extended_score', np.nan):.3f}, "
@@ -9096,7 +9096,7 @@ def _build_result(
                 )
             elif normalized_label == "S":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
                     f"thumb={metrics.get('thumb_extended_score', np.nan):.3f}, "
@@ -9114,7 +9114,7 @@ def _build_result(
                 )
             elif normalized_label == "T":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
                     f"thumb={metrics.get('thumb_extended_score', np.nan):.3f}, "
@@ -9132,7 +9132,7 @@ def _build_result(
                 )
             elif normalized_label == "K":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
                     f"thumb={metrics.get('thumb_extended_score', np.nan):.3f}, "
@@ -9142,7 +9142,7 @@ def _build_result(
                 )
             elif normalized_label == "R":
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
                     f"index={metrics.get('index_extended_score', np.nan):.3f}, "
@@ -9154,7 +9154,7 @@ def _build_result(
                 )
             else:
                 message = (
-                    f"Validación geométrica estática OK para {normalized_label}: "
+                    f"Validacion geometrica estatica OK para {normalized_label}: "
                     f"valid_ratio={valid_ratio:.3f}, "
                     f"finger_count={metrics.get('finger_count_extended', np.nan):.2f}, "
                     f"thumb={metrics.get('thumb_extended_score', np.nan):.3f}, "
@@ -9162,7 +9162,7 @@ def _build_result(
                 )
         else:
             message = (
-                f"Validación geométrica estática NO OK para {normalized_label}: "
+                f"Validacion geometrica estatica NO OK para {normalized_label}: "
                 + " | ".join(reasons)
             )
 
