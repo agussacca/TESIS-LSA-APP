@@ -26,6 +26,7 @@ import {
   obtenerMarcos,
   obtenerTitulos,
   equiparPerfil,
+  obtenerRondaDesafios,
 } from "./services/progressApi";
 import { actualizarPerfilUsuario, cerrarSesion, iniciarSesion, obtenerSesionActual, registrarUsuario } from "./services/authApi";
 import GuidedSpellPanel from "./components/practice/GuidedSpellPanel";
@@ -479,9 +480,9 @@ export default function App() {
         onLogout={logout}
       />
 
-      {/*<BackendDiagnostics />
-      {/*<CameraFrameDiagnostics />
-      <EvaluateDiagnostics />*/}
+      {/* <BackendDiagnostics /> */}
+      {/* <CameraFrameDiagnostics /> */}
+      {/* <EvaluateDiagnostics /> */}
 
       <main className="main page-in">
         {screen === "home" && (
@@ -584,16 +585,7 @@ export default function App() {
         <CardPreviewModal
           preview={selectedPreview}
           onClose={() => setSelectedPreview(null)}
-          onPracticeSign={
-            activeCategory?.id === "abecedario"
-              ? (sign) => {
-                  setPracticeInitialLetter(sign.name);
-                  setPracticeSingleSign(true);
-                  setSelectedPreview(null);
-                  setScreen("camera");
-                }
-              : null
-          }
+          onPracticeSign={null}
         />
       )}
       {gamificationToast && (
@@ -1265,6 +1257,117 @@ function normalizeLearningSign(item, category = null) {
   };
 }
 
+function normalizeChallengeSign(item) {
+  const name = item?.nombre ?? item?.name ?? "";
+  const provinceId =
+    item?.provincia_codigo ??
+    item?.provinciaCodigo ??
+    item?.codigo_provincia ??
+    item?.codigoProvincia ??
+    item?.provinceId ??
+    null;
+
+  return {
+    id: item?.id_senia ?? item?.id ?? item?.codigo ?? name,
+    dbId: item?.id_senia ?? item?.id ?? null,
+    codigo: item?.codigo ?? slugifyCategoryName(name),
+    name,
+    thumb: item?.imagen_url ?? item?.thumb ?? name,
+    description: item?.descripcion ?? item?.description ?? "",
+    imageUrl: item?.imagen_url ?? item?.imageUrl ?? null,
+    videoUrl: item?.video_url ?? item?.videoUrl ?? null,
+    order: item?.orden ?? item?.order ?? 0,
+    provinceId: provinceId ? String(provinceId).toUpperCase() : null,
+  };
+}
+function normalizeChallengeFromApi(item) {
+  const tipo = item?.tipo;
+
+  if (tipo === "sign_to_word") {
+    const sign = normalizeChallengeSign(item.senia);
+    const correctName = item?.respuesta_correcta?.nombre ?? sign.name;
+
+    return {
+      ...item,
+      type: "signToWord",
+      sign,
+      options: Array.isArray(item.opciones)
+        ? item.opciones.map((option) => ({
+            id: option.id_senia ?? option.id ?? option.nombre,
+            name: option.nombre ?? option.name,
+          }))
+        : [],
+      correctName,
+    };
+  }
+
+  if (tipo === "word_to_sign") {
+    const correctId = item?.respuesta_correcta?.id_senia ?? item?.respuesta_correcta?.id;
+
+    return {
+      ...item,
+      type: "wordToSign",
+      name: item.nombre,
+      options: Array.isArray(item.opciones)
+        ? item.opciones.map(normalizeChallengeSign)
+        : [],
+      correctId,
+    };
+  }
+
+  if (tipo === "association") {
+    const signs = Array.isArray(item.senias)
+      ? item.senias.map(normalizeChallengeSign)
+      : [];
+
+    return {
+      ...item,
+      type: "association",
+      signs,
+      names: Array.isArray(item.nombres)
+        ? item.nombres
+        : signs.map((sign) => sign.name),
+      correctMap: item.respuesta_correcta ?? {},
+    };
+  }
+
+  if (tipo === "order_numbers") {
+    return {
+      ...item,
+      type: "number",
+      options: Array.isArray(item.opciones)
+        ? item.opciones.map(normalizeChallengeSign)
+        : [],
+      correctOrder: Array.isArray(item.respuesta_correcta)
+        ? item.respuesta_correcta
+        : [],
+    };
+  }
+
+  if (tipo === "province_map") {
+    const targets = Array.isArray(item.targets)
+      ? item.targets.map(normalizeChallengeSign)
+      : [];
+
+    const options = Array.isArray(item.opciones)
+      ? item.opciones.map(normalizeChallengeSign)
+      : targets;
+
+    return {
+      ...item,
+      type: "map",
+      targets,
+      options,
+      correctMap: item.respuesta_correcta ?? {},
+    };
+  }
+
+  return {
+    ...item,
+    type: tipo,
+  };
+}
+
 function groupAchievementsByFamily(items) {
   return items.reduce((groups, achievement) => {
     const family = achievement.family || "General";
@@ -1764,6 +1867,7 @@ function SignCard({
   hideName = false,
   customNameSlot = null,
   showPracticeButton = false,
+  showExpandedTitle = true,
   emphasizeName = false,
   largeName = false,
   onPractice,
@@ -1858,7 +1962,7 @@ function SignCard({
         </button>
       )}
 
-      {expanded && (
+      {expanded && showExpandedTitle && (
         <div className="screen-top card fade-up">
           <h2>{expandedTitle}</h2>
         </div>
@@ -1925,7 +2029,18 @@ function SignCard({
 
 function CardPreviewModal({ preview, onClose, onPracticeSign }) {
   const variant = preview.showName || preview.showDescription ? "learning" : "game";
-  const canPractice = Boolean(onPracticeSign && preview?.sign?.name);
+
+  const canPractice = Boolean(
+    preview.allowPractice === true &&
+    onPracticeSign &&
+    preview?.sign?.name
+  );
+
+  const showExpandedTitle = Boolean(
+    preview.showTitle === true ||
+    preview.showName === true ||
+    preview.showDescription === true
+  );
 
   return (
     <div className="modal-overlay card-preview-overlay">
@@ -1934,6 +2049,7 @@ function CardPreviewModal({ preview, onClose, onPracticeSign }) {
         variant={variant}
         expanded
         hideName={!preview.showName}
+        showExpandedTitle={showExpandedTitle}
         showPracticeButton={canPractice}
         onPractice={() => onPracticeSign?.(preview.sign)}
         onCollapse={onClose}
@@ -1941,7 +2057,6 @@ function CardPreviewModal({ preview, onClose, onPracticeSign }) {
     </div>
   );
 }
-
 function CameraPracticeScreen({
   onBack,
   initialLetter = "A",
@@ -2084,7 +2199,6 @@ function ChallengesScreen({
   usuarioId = null,
   persistEnabled = true,
 }) {
-  const total = 5;
   const [index, setIndex] = useState(0);
   const [feedback, setFeedback] = useState(null);
   const [roundFinished, setRoundFinished] = useState(false);
@@ -2095,20 +2209,76 @@ function ChallengesScreen({
   const [roundSaveStatus, setRoundSaveStatus] = useState("idle");
   const [currentAnswer, setCurrentAnswer] = useState(null);
 
-  const challenge = getChallengeForCategory(category.id, index);
+  const [challengeRound, setChallengeRound] = useState(null);
+  const [roundLoading, setRoundLoading] = useState(true);
+  const [roundError, setRoundError] = useState(null);
+
+  const challenges = challengeRound?.desafios ?? [];
+  const total = challenges.length;
+  const challenge = challenges[index];
 
   const XP_MINIJUEGO_CORRECTO = 5;
   const XP_BONUS_RONDA_PERFECTA = 10;
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadChallengeRound() {
+      setRoundLoading(true);
+      setRoundError(null);
+      setIndex(0);
+      setFeedback(null);
+      setRoundFinished(false);
+      setRoundXp(0);
+      setCorrectCount(0);
+      setRoundResponses([]);
+      setRoundStartedAt(new Date().toISOString());
+      setRoundSaveStatus("idle");
+      setCurrentAnswer(null);
+
+      try {
+        const data = await obtenerRondaDesafios(category.dbId, 5);
+        if (cancelled) return;
+
+        const normalizedRound = {
+          ...data,
+          desafios: Array.isArray(data.desafios)
+            ? data.desafios.map(normalizeChallengeFromApi)
+            : [],
+        };
+
+        setChallengeRound(normalizedRound);
+      } catch (error) {
+        console.error("No se pudo cargar la ronda de desafíos:", error);
+        if (!cancelled) {
+          setRoundError(error);
+          setChallengeRound({ desafios: [] });
+        }
+      } finally {
+        if (!cancelled) {
+          setRoundLoading(false);
+        }
+      }
+    }
+
+    if (category?.dbId) {
+      loadChallengeRound();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [category?.dbId]);
+
+  useEffect(() => {
     setCurrentAnswer(null);
     setFeedback(null);
-  }, [category.id, index]);
+  }, [category.id, index, challenge?.id]);
 
   function handleCheck() {
     if (feedback && feedback !== "missing") return;
 
-    const challengeType = getChallengeForCategory(category.id, index);
+    if (!challenge) return;
 
     if (!currentAnswer?.isComplete) {
       setFeedback("missing");
@@ -2119,7 +2289,7 @@ function ChallengesScreen({
     const xpForAnswer = isCorrect ? XP_MINIJUEGO_CORRECTO : 0;
 
     const response = {
-      tipo_minijuego: challengeType,
+      tipo_minijuego: challenge.tipo ?? challenge.type,
       orden: index + 1,
       fue_correcta: isCorrect,
       xp_obtenida: xpForAnswer,
@@ -2187,53 +2357,82 @@ function ChallengesScreen({
     }
   }
 
-  if (roundFinished) {
+  function restartRound() {
+    setIndex(0);
+    setFeedback(null);
+    setRoundFinished(false);
+    setRoundXp(0);
+    setCorrectCount(0);
+    setRoundResponses([]);
+    setRoundStartedAt(new Date().toISOString());
+    setRoundSaveStatus("idle");
+    setCurrentAnswer(null);
+    setChallengeRound(null);
+    setRoundError(null);
+    setRoundLoading(true);
+
+    obtenerRondaDesafios(category.dbId, 5)
+      .then((data) => {
+        setChallengeRound({
+          ...data,
+          desafios: Array.isArray(data.desafios)
+            ? data.desafios.map(normalizeChallengeFromApi)
+            : [],
+        });
+      })
+      .catch((error) => {
+        console.error("No se pudo reiniciar la ronda de desafíos:", error);
+        setRoundError(error);
+        setChallengeRound({ desafios: [] });
+      })
+      .finally(() => {
+        setRoundLoading(false);
+      });
+  }
+
+  if (roundLoading) {
     return (
-      <div className="page-stack">
-        <BackButton onBack={onBack} />
-        <section className="round-summary card fade-up">
-          <div className="summary-icon">🎉</div>
-          <h2>Ronda completada</h2>
-          <p>Terminaste la ronda de desafíos de {category.name}.</p>
+      <div className="screen narrow">
+        <button className="ghost back-button" onClick={onBack}>← Volver</button>
+        <section className="challenge-card card fade-up">
+          <p>Cargando desafíos...</p>
+        </section>
+      </div>
+    );
+  }
 
-          <div className="summary-stats">
-            <Stat label="XP ganada" value={`+${roundXp}`} />
-            <Stat label="Correctas" value={`${correctCount}/${total}`} />
-            <Stat label="Minijuegos" value={total} />
-          </div>
+  if (roundError || total === 0) {
+    return (
+      <div className="screen narrow">
+        <button className="ghost back-button" onClick={onBack}>← Volver</button>
+        <section className="challenge-card card fade-up">
+          <small className="blue-label">Desafíos interactivos</small>
+          <h3>No se pudieron cargar los desafíos</h3>
+          <p className="screen-description">
+            La categoría no tiene desafíos disponibles o el backend no pudo generarlos.
+          </p>
+          <button className="primary" onClick={restartRound}>Reintentar</button>
+        </section>
+      </div>
+    );
+  }
 
-          {correctCount === total && (
-            <p className="empty-objectives-message">
-              Ronda perfecta: +10 XP extra.
-            </p>
-          )}
+  if (roundFinished) {
+    const perfect = correctCount === total;
 
-          {roundSaveStatus === "saving" && (
-            <p className="empty-objectives-message">
-              Guardando progreso de la ronda...
-            </p>
-          )}
-
-          {roundSaveStatus === "error" && (
-            <p className="empty-objectives-message">
-              No se pudo guardar la ronda.
-            </p>
-          )}
-
-          <div className="summary-actions">
-            <button className="primary" onClick={() => {
-              setIndex(0);
-              setRoundXp(0);
-              setCorrectCount(0);
-              setRoundFinished(false);
-              setRoundResponses([]);
-              setRoundStartedAt(new Date().toISOString());
-              setRoundSaveStatus("idle");
-              setCurrentAnswer(null);
-            }}>
-              Jugar otra ronda
-            </button>
-            <button className="secondary" onClick={onBack}>Volver</button>
+    return (
+      <div className="screen narrow">
+        <button className="ghost back-button" onClick={onBack}>← Volver</button>
+        <section className="challenge-card card fade-up">
+          <small className="blue-label">Ronda finalizada</small>
+          <h3>{perfect ? "¡Ronda perfecta!" : "¡Buen trabajo!"}</h3>
+          <p>Respuestas correctas: {correctCount} de {total}</p>
+          <p>XP obtenida: {roundXp}</p>
+          {roundSaveStatus === "saving" && <p>Guardando progreso...</p>}
+          {roundSaveStatus === "error" && <p>No se pudo guardar la ronda.</p>}
+          <div className="challenge-actions">
+            <button className="secondary" onClick={restartRound}>Repetir ronda</button>
+            <button className="primary" onClick={onBack}>Volver</button>
           </div>
         </section>
       </div>
@@ -2241,27 +2440,54 @@ function ChallengesScreen({
   }
 
   return (
-    <div className="page-stack">
-      <BackButton onBack={onBack} />
+    <div className="screen narrow">
+      <button className="ghost back-button" onClick={onBack}>← Volver</button>
 
-      <div className="screen-header card fade-up">
-        <div>
-          <h2>Desafíos: {category.name}</h2>
-          <p>Ronda de minijuegos</p>
-        </div>
+      <div className="progress-line">
+        <span>{category.name}</span>
         <strong>{index + 1}/{total}</strong>
       </div>
 
-      <ProgressBar current={index + 1} total={total} />
+      <section className="challenge-card card fade-up">
+        {challenge?.type === "signToWord" && (
+          <SignToWordChallenge
+            challenge={challenge}
+            onOpenPreview={onOpenPreview}
+            onAnswerChange={setCurrentAnswer}
+          />
+        )}
 
-      <section key={`${category.id}-${index}`} className="challenge-card challenge-enter">
-        {challenge === "signToWord" && <SignToWordChallenge onOpenPreview={onOpenPreview} onAnswerChange={setCurrentAnswer} />}
-        {challenge === "wordToSign" && <WordToSignChallenge onOpenPreview={onOpenPreview} onAnswerChange={setCurrentAnswer} />}
-        {challenge === "association" && <AssociationChallenge onOpenPreview={onOpenPreview} onAnswerChange={setCurrentAnswer} />}
-        {challenge === "complete" && <CompleteChallenge onOpenPreview={onOpenPreview} onAnswerChange={setCurrentAnswer} />}
-        {challenge === "phrase" && <PhraseChallenge onOpenPreview={onOpenPreview} onAnswerChange={setCurrentAnswer} />}
-        {challenge === "number" && <NumberChallenge onOpenPreview={onOpenPreview} onAnswerChange={setCurrentAnswer} />}
-        {challenge === "map" && <MapChallenge onOpenPreview={onOpenPreview} onAnswerChange={setCurrentAnswer} />}
+        {challenge?.type === "wordToSign" && (
+          <WordToSignChallenge
+            challenge={challenge}
+            onOpenPreview={onOpenPreview}
+            onAnswerChange={setCurrentAnswer}
+          />
+        )}
+
+        {challenge?.type === "association" && (
+          <AssociationChallenge
+            challenge={challenge}
+            onOpenPreview={onOpenPreview}
+            onAnswerChange={setCurrentAnswer}
+          />
+        )}
+
+        {challenge?.type === "number" && (
+          <NumberChallenge
+            challenge={challenge}
+            onOpenPreview={onOpenPreview}
+            onAnswerChange={setCurrentAnswer}
+          />
+        )}
+
+        {challenge?.type === "map" && (
+          <MapChallenge
+            challenge={challenge}
+            onOpenPreview={onOpenPreview}
+            onAnswerChange={setCurrentAnswer}
+          />
+        )}
 
         {feedback && (
           <div className={`challenge-feedback ${feedback}`}>
@@ -2281,27 +2507,18 @@ function ChallengesScreen({
   );
 }
 
-function getChallengeForCategory(categoryId, index) {
-  if (index === 0) return "signToWord";
-  if (index === 1) return "wordToSign";
-  if (index === 2) return "association";
-  if ((categoryId === "comunicacion" || categoryId === "comunicacion_basica") && index === 3) return "phrase";
-  if (categoryId === "numeros" && index === 3) return "number";
-  if (categoryId === "provincias" && index === 3) return "map";
-  return "complete";
-}
-
-function SignToWordChallenge({ onOpenPreview, onAnswerChange }) {
-  const sign = { id: "hola", name: "Hola", thumb: "👋", description: "Saludo básico." };
-  const expected = "Hola";
+function SignToWordChallenge({ challenge, onOpenPreview, onAnswerChange }) {
+  const sign = challenge.sign;
+  const expected = challenge.correctName;
+  const options = challenge.options ?? [];
   const [selectedOption, setSelectedOption] = useState(null);
 
   function chooseOption(option) {
-    setSelectedOption(option);
+    setSelectedOption(option.name);
     onAnswerChange?.({
       isComplete: true,
-      isCorrect: option === expected,
-      value: option,
+      isCorrect: option.name === expected,
+      value: option.name,
     });
   }
 
@@ -2320,14 +2537,14 @@ function SignToWordChallenge({ onOpenPreview, onAnswerChange }) {
         />
 
         <div className="option-card-grid">
-          {["Hola", "Gracias", "Rojo", "Papá"].map((option) => (
+          {options.map((option) => (
             <button
-              key={option}
+              key={option.id}
               type="button"
-              className={`text-option-card ${selectedOption === option ? "selected" : ""}`}
+              className={`text-option-card ${selectedOption === option.name ? "selected" : ""}`}
               onClick={() => chooseOption(option)}
             >
-              {option}
+              {option.name}
             </button>
           ))}
         </div>
@@ -2336,21 +2553,16 @@ function SignToWordChallenge({ onOpenPreview, onAnswerChange }) {
   );
 }
 
-function WordToSignChallenge({ onOpenPreview, onAnswerChange }) {
+function WordToSignChallenge({ challenge, onOpenPreview, onAnswerChange }) {
   const [selectedId, setSelectedId] = useState(null);
-  const expectedId = "hola";
-  const options = [
-    { id: "hola", name: "Hola", thumb: "👋", description: "Saludo básico." },
-    { id: "gracias", name: "Gracias", thumb: "🙏", description: "Expresión de agradecimiento." },
-    { id: "mama", name: "Mamá", thumb: "👩", description: "Seña correspondiente a mamá." },
-    { id: "azul", name: "Azul", thumb: "🔵", description: "Seña correspondiente al color azul." },
-  ];
+  const expectedId = challenge.correctId;
+  const options = challenge.options ?? [];
 
   function chooseSign(sign) {
     setSelectedId(sign.id);
     onAnswerChange?.({
       isComplete: true,
-      isCorrect: sign.id === expectedId,
+      isCorrect: sign.id === expectedId || sign.dbId === expectedId,
       value: sign.name,
     });
   }
@@ -2358,7 +2570,7 @@ function WordToSignChallenge({ onOpenPreview, onAnswerChange }) {
   return (
     <div>
       <small className="blue-label">Selección múltiple</small>
-      <h3>Elegí la seña correspondiente a: <span>Hola</span></h3>
+      <h3>Elegí la seña correspondiente a: <span>{challenge.name}</span></h3>
 
       <div className="sign-option-grid">
         {options.map((sign) => (
@@ -2380,22 +2592,27 @@ function WordToSignChallenge({ onOpenPreview, onAnswerChange }) {
   );
 }
 
-function AssociationChallenge({ onOpenPreview, onAnswerChange }) {
-  const signs = [
-    { id: "rojo", name: "Rojo", thumb: "🔴", description: "Seña correspondiente al color rojo." },
-    { id: "azul", name: "Azul", thumb: "🔵", description: "Seña correspondiente al color azul." },
-    { id: "verde", name: "Verde", thumb: "🟢", description: "Seña correspondiente al color verde." },
-  ];
+function AssociationChallenge({ challenge, onOpenPreview, onAnswerChange }) {
+  const signs = challenge.signs ?? [];
+  const names = challenge.names ?? signs.map((sign) => sign.name);
+  const correctMap = challenge.correctMap ?? {};
 
   const [answers, setAnswers] = useState({});
 
   function handleDropName(signId, label, fromSlot) {
     setAnswers((prev) => {
       const next = { ...prev };
-      if (fromSlot && fromSlot !== signId) next[fromSlot] = null;
+
+      if (fromSlot && fromSlot !== signId) {
+        next[fromSlot] = null;
+      }
+
       Object.keys(next).forEach((slot) => {
-        if (slot !== signId && next[slot] === label) next[slot] = null;
+        if (slot !== String(signId) && next[slot] === label) {
+          next[slot] = null;
+        }
       });
+
       next[signId] = label;
       return next;
     });
@@ -2406,17 +2623,20 @@ function AssociationChallenge({ onOpenPreview, onAnswerChange }) {
   }
 
   const usedNames = Object.values(answers).filter(Boolean);
-  const availableNames = signs.filter((sign) => !usedNames.includes(sign.name));
+  const availableNames = names.filter((name) => !usedNames.includes(name));
 
   useEffect(() => {
     const isComplete = signs.every((sign) => Boolean(answers[sign.id]));
-    const isCorrect = isComplete && signs.every((sign) => answers[sign.id] === sign.name);
+    const isCorrect =
+      isComplete &&
+      signs.every((sign) => answers[sign.id] === correctMap[String(sign.dbId ?? sign.id)]);
+
     onAnswerChange?.({
       isComplete,
       isCorrect,
       value: { ...answers },
     });
-  }, [answers, onAnswerChange]);
+  }, [answers, signs, correctMap, onAnswerChange]);
 
   return (
     <div>
@@ -2438,15 +2658,24 @@ function AssociationChallenge({ onOpenPreview, onAnswerChange }) {
                   onDropName={(label, fromSlot) => handleDropName(sign.id, label, fromSlot)}
                 />
               }
-              onExpand={() => onOpenPreview({ sign, title: "Vista de seña", showName: false, showDescription: false })}
+              onExpand={() =>
+                onOpenPreview({
+                  sign,
+                  title: "Vista de seña",
+                  showName: false,
+                  showDescription: false,
+                  showTitle: false,
+                  allowPractice: false,
+                })
+              }
             />
           </div>
         ))}
       </div>
 
       <SignOptionsTray onReturn={clearNameSlot}>
-        {availableNames.map((sign) => (
-          <DragName key={sign.id} label={sign.name} />
+        {availableNames.map((name) => (
+          <DragName key={name} label={name} />
         ))}
       </SignOptionsTray>
     </div>
@@ -2563,13 +2792,19 @@ function PhraseChallenge({ onOpenPreview, onAnswerChange }) {
   );
 }
 
-function NumberChallenge({ onOpenPreview, onAnswerChange }) {
-  const [slots, setSlots] = useState({ slot1: null, slot2: null });
+function NumberChallenge({ challenge, onOpenPreview, onAnswerChange }) {
+  const options = challenge.options ?? [];
+  const correctOrder = challenge.correctOrder ?? [];
 
-  const options = [
-    { id: "3", name: "Tres", thumb: "3", description: "Seña correspondiente al número 3." },
-    { id: "4", name: "Cuatro", thumb: "4", description: "Seña correspondiente al número 4." },
-  ];
+  const initialSlots = useMemo(() => {
+    return Object.fromEntries(correctOrder.map((_, index) => [`slot${index + 1}`, null]));
+  }, [correctOrder]);
+
+  const [slots, setSlots] = useState(initialSlots);
+
+  useEffect(() => {
+    setSlots(initialSlots);
+  }, [initialSlots]);
 
   const usedIds = Object.values(slots).filter(Boolean).map((sign) => sign.id);
   const availableOptions = options.filter((sign) => !usedIds.includes(sign.id));
@@ -2577,10 +2812,17 @@ function NumberChallenge({ onOpenPreview, onAnswerChange }) {
   function setSlot(slotId, item, fromSlot) {
     setSlots((prev) => {
       const next = { ...prev };
-      if (fromSlot && fromSlot !== slotId) next[fromSlot] = null;
+
+      if (fromSlot && fromSlot !== slotId) {
+        next[fromSlot] = null;
+      }
+
       Object.keys(next).forEach((slot) => {
-        if (slot !== slotId && next[slot]?.id === item?.id) next[slot] = null;
+        if (slot !== slotId && next[slot]?.id === item?.id) {
+          next[slot] = null;
+        }
       });
+
       next[slotId] = item;
       return next;
     });
@@ -2591,15 +2833,20 @@ function NumberChallenge({ onOpenPreview, onAnswerChange }) {
   }
 
   useEffect(() => {
-    const expected = { slot1: "3", slot2: "4" };
-    const isComplete = Object.keys(expected).every((slotId) => Boolean(slots[slotId]));
-    const isCorrect = isComplete && Object.entries(expected).every(([slotId, expectedId]) => slots[slotId]?.id === expectedId);
+    const slotIds = Object.keys(initialSlots);
+    const isComplete = slotIds.every((slotId) => Boolean(slots[slotId]));
+
+    const selectedOrder = slotIds.map((slotId) => slots[slotId]?.dbId ?? slots[slotId]?.id);
+    const isCorrect =
+      isComplete &&
+      selectedOrder.every((id, index) => Number(id) === Number(correctOrder[index]));
+
     onAnswerChange?.({
       isComplete,
       isCorrect,
-      value: Object.fromEntries(Object.entries(slots).map(([slotId, sign]) => [slotId, sign?.name ?? null])),
+      value: selectedOrder,
     });
-  }, [slots, onAnswerChange]);
+  }, [slots, initialSlots, correctOrder, onAnswerChange]);
 
   return (
     <div>
@@ -2607,10 +2854,16 @@ function NumberChallenge({ onOpenPreview, onAnswerChange }) {
       <h3>Completá la secuencia</h3>
 
       <div className="phrase-row">
-        <span className="fixed-word">2</span>
-        <DropZone label="Seña" slotId="slot1" onDropItem={(item, fromSlot) => setSlot("slot1", item, fromSlot)} card={slots.slot1} onOpenPreview={onOpenPreview} />
-        <DropZone label="Seña" slotId="slot2" onDropItem={(item, fromSlot) => setSlot("slot2", item, fromSlot)} card={slots.slot2} onOpenPreview={onOpenPreview} />
-        <span className="fixed-word">5</span>
+        {Object.keys(initialSlots).map((slotId) => (
+          <DropZone
+            key={slotId}
+            label="Seña"
+            slotId={slotId}
+            onDropItem={(item, fromSlot) => setSlot(slotId, item, fromSlot)}
+            card={slots[slotId]}
+            onOpenPreview={onOpenPreview}
+          />
+        ))}
       </div>
 
       <SignOptionsTray onReturn={clearSlot}>
@@ -2622,45 +2875,35 @@ function NumberChallenge({ onOpenPreview, onAnswerChange }) {
   );
 }
 
-function MapChallenge({ onOpenPreview, onAnswerChange }) {
-  const mapTargets = useMemo(() => [
-    {
-      id: "salta",
-      provinceId: "ARA",
-      name: "Salta",
-      thumb: "S",
-      description: "Seña correspondiente a la provincia de Salta.",
-    },
-    {
-      id: "santiago_del_estero",
-      provinceId: "ARG",
-      name: "Santiago del Estero",
-      thumb: "SE",
-      description: "Seña correspondiente a la provincia de Santiago del Estero.",
-    },
-    {
-      id: "la_rioja",
-      provinceId: "ARF",
-      name: "La Rioja",
-      thumb: "LR",
-      description: "Seña correspondiente a la provincia de La Rioja.",
-    },
-  ], []);
+function MapChallenge({ challenge, onOpenPreview, onAnswerChange }) {
+  const mapTargets = useMemo(() => challenge.targets ?? [], [challenge]);
+  const options = challenge.options ?? mapTargets;
 
   const [slots, setSlots] = useState(() =>
     Object.fromEntries(mapTargets.map((target) => [target.id, null]))
   );
 
+  useEffect(() => {
+    setSlots(Object.fromEntries(mapTargets.map((target) => [target.id, null])));
+  }, [mapTargets]);
+
   const usedIds = Object.values(slots).filter(Boolean).map((sign) => sign.id);
-  const availableOptions = mapTargets.filter((sign) => !usedIds.includes(sign.id));
+  const availableOptions = options.filter((sign) => !usedIds.includes(sign.id));
 
   function setSlot(slotId, item, fromSlot) {
     setSlots((prev) => {
       const next = { ...prev };
-      if (fromSlot && fromSlot !== slotId) next[fromSlot] = null;
+
+      if (fromSlot && fromSlot !== slotId) {
+        next[fromSlot] = null;
+      }
+
       Object.keys(next).forEach((slot) => {
-        if (slot !== slotId && next[slot]?.id === item?.id) next[slot] = null;
+        if (slot !== slotId && next[slot]?.id === item?.id) {
+          next[slot] = null;
+        }
       });
+
       next[slotId] = item;
       return next;
     });
@@ -2672,11 +2915,19 @@ function MapChallenge({ onOpenPreview, onAnswerChange }) {
 
   useEffect(() => {
     const isComplete = mapTargets.every((target) => Boolean(slots[target.id]));
-    const isCorrect = isComplete && mapTargets.every((target) => slots[target.id]?.id === target.id);
+    const isCorrect =
+      isComplete &&
+      mapTargets.every((target) => {
+        const placed = slots[target.id];
+        return placed?.id === target.id;
+      });
+
     onAnswerChange?.({
       isComplete,
       isCorrect,
-      value: Object.fromEntries(Object.entries(slots).map(([slotId, sign]) => [slotId, sign?.name ?? null])),
+      value: Object.fromEntries(
+        Object.entries(slots).map(([slotId, sign]) => [slotId, sign?.name ?? null])
+      ),
     });
   }, [slots, mapTargets, onAnswerChange]);
 
@@ -2706,19 +2957,18 @@ function MapChallenge({ onOpenPreview, onAnswerChange }) {
 function InteractiveArgentinaMap({ targets, slots, onDropTarget, onOpenPreview }) {
   const hostRef = useRef(null);
   const [mapSize, setMapSize] = useState({ width: 1000, height: 620 });
-
   const provincePoints = useMemo(() => ({
     ARA: { x: 463.3, y: 124.5 }, // Salta
     ARG: { x: 506.7, y: 180.8 }, // Santiago del Estero
     ARF: { x: 429.4, y: 223.5 }, // La Rioja
-    ARY: { x: 452.1, y: 68.9 },
-    ART: { x: 465.2, y: 160.5 },
-    ARK: { x: 423.8, y: 168.7 },
-    ARX: { x: 500.2, y: 279.7 },
-    ARJ: { x: 391.6, y: 254.2 },
-    ARM: { x: 401.6, y: 345.1 },
+    ARY: { x: 452.1, y: 68.9 },  // Jujuy
+    ART: { x: 465.2, y: 160.5 }, // Tucumán
+    ARK: { x: 423.8, y: 168.7 }, // Catamarca
+    ARD: { x: 455.8, y: 323.0 }, // San Luis
+    ARX: { x: 500.2, y: 279.7 }, // Córdoba
+    ARJ: { x: 391.6, y: 254.2 }, // San Juan
+    ARM: { x: 401.6, y: 345.1 }, // Mendoza
   }), []);
-
   useEffect(() => {
     const host = hostRef.current;
     if (!host || typeof ResizeObserver === "undefined") return;
@@ -2869,8 +3119,11 @@ function PreviewableSignCard({ sign, onOpenPreview, hideName = false, title }) {
             title: title || "Vista de seña",
             showName: !hideName,
             showDescription: false,
+            showTitle: !hideName,
+            allowPractice: false,
           })
         }
+
       />
     </div>
   );
@@ -2890,8 +3143,16 @@ function DragSignCard({ sign, onOpenPreview }) {
         className="drag-sign-card"
         draggable
         onDragStart={handleDragStart}
-        onExpand={() => onOpenPreview({ sign, title: "Vista de seña", showName: false, showDescription: false })}
-      />
+        onExpand={() =>
+          onOpenPreview({
+            sign,
+            title: "Vista de seña",
+            showName: false,
+            showDescription: false,
+            showTitle: false,
+            allowPractice: false,
+          })
+        }/>
     </div>
   );
 }
@@ -2959,7 +3220,16 @@ function DropZone({ label, onDropItem, card = null, compact = false, slotId, onO
           expanded={false}
           draggable
           onDragStart={handleCardDragStart}
-          onExpand={() => onOpenPreview?.({ sign: card, title: "Vista de seña", showName: false, showDescription: false })}
+          onExpand={() =>
+            onOpenPreview?.({
+              sign: card,
+              title: "Vista de seña",
+              showName: false,
+              showDescription: false,
+              showTitle: false,
+              allowPractice: false,
+            })
+          }
           className={compact ? "drop-zone-card compact" : "drop-zone-card"}
         />
       ) : (

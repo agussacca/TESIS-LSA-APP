@@ -19,6 +19,7 @@ from app.db.database import SessionLocal, init_db
 from app.db.seed import sembrar_datos_iniciales
 from app.routers.auth import router as auth_router
 from app.routers.resultados_practica import router as resultados_practica_router
+from app.routers.desafios_interactivos import router as desafios_interactivos_router
 
 
 @asynccontextmanager
@@ -73,7 +74,7 @@ except Exception:
 
 app.include_router(auth_router)
 app.include_router(resultados_practica_router)
-
+app.include_router(desafios_interactivos_router)
 
 @app.get("/")
 def root():

@@ -61,10 +61,19 @@ SENIAS_INICIALES = [
     {"categoria": "Familia", "nombre": "Tia", "descripcion": "Seña correspondiente a tía.", "imagen_url": "/assets/signs/familia/tia.png", "video_url": "/assets/videos/familia/tia.mp4", "orden": 10},
     {"categoria": "Familia", "nombre": "Tio", "descripcion": "Seña correspondiente a tío.", "imagen_url": "/assets/signs/familia/tio.png", "video_url": "/assets/videos/familia/tio.mp4", "orden": 11},
 
-    {"categoria": "Colores", "nombre": "Rojo", "descripcion": "Seña correspondiente al color rojo.", "imagen_url": "/assets/signs/colores/rojo.png", "video_url": "/assets/videos/colores/rojo.mp4", "orden": 1},
+    {"categoria": "Colores", "nombre": "Amarillo", "descripcion": "Seña correspondiente al color amarillo.", "imagen_url": "/assets/signs/colores/amarillo.png", "video_url": "/assets/videos/colores/amarillo.mp4", "orden": 1},
     {"categoria": "Colores", "nombre": "Azul", "descripcion": "Seña correspondiente al color azul.", "imagen_url": "/assets/signs/colores/azul.png", "video_url": "/assets/videos/colores/azul.mp4", "orden": 2},
-    {"categoria": "Colores", "nombre": "Verde", "descripcion": "Seña correspondiente al color verde.", "imagen_url": "/assets/signs/colores/verde.png", "video_url": "/assets/videos/colores/verde.mp4", "orden": 3},
-
+    {"categoria": "Colores", "nombre": "Blanco", "descripcion": "Seña correspondiente al color blanco.", "imagen_url": "/assets/signs/colores/blanco.png", "video_url": "/assets/videos/colores/blanco.mp4", "orden": 3},
+    {"categoria": "Colores", "nombre": "Celeste", "descripcion": "Seña correspondiente al color celeste.", "imagen_url": "/assets/signs/colores/celeste.png", "video_url": "/assets/videos/colores/celeste.mp4", "orden": 4},
+    {"categoria": "Colores", "nombre": "Gris", "descripcion": "Seña correspondiente al color gris.", "imagen_url": "/assets/signs/colores/gris.png", "video_url": "/assets/videos/colores/gris.mp4", "orden": 5},
+    {"categoria": "Colores", "nombre": "Marrón", "descripcion": "Seña correspondiente al color marrón.", "imagen_url": "/assets/signs/colores/marron.png", "video_url": "/assets/videos/colores/marron.mp4", "orden": 6},
+    {"categoria": "Colores", "nombre": "Naranja", "descripcion": "Seña correspondiente al color naranja.", "imagen_url": "/assets/signs/colores/naranja.png", "video_url": "/assets/videos/colores/naranja.mp4", "orden": 7},
+    {"categoria": "Colores", "nombre": "Negro", "descripcion": "Seña correspondiente al color negro.", "imagen_url": "/assets/signs/colores/negro.png", "video_url": "/assets/videos/colores/negro.mp4", "orden": 8},
+    {"categoria": "Colores", "nombre": "Rojo", "descripcion": "Seña correspondiente al color rojo.", "imagen_url": "/assets/signs/colores/rojo.png", "video_url": "/assets/videos/colores/rojo.mp4", "orden": 9},
+    {"categoria": "Colores", "nombre": "Rosa", "descripcion": "Seña correspondiente al color rosa.", "imagen_url": "/assets/signs/colores/rosa.png", "video_url": "/assets/videos/colores/rosa.mp4", "orden": 10},
+    {"categoria": "Colores", "nombre": "Verde", "descripcion": "Seña correspondiente al color verde.", "imagen_url": "/assets/signs/colores/verde.png", "video_url": "/assets/videos/colores/verde.mp4", "orden": 11},
+    {"categoria": "Colores", "nombre": "Violeta", "descripcion": "Seña correspondiente al color violeta.", "imagen_url": "/assets/signs/colores/violeta.png", "video_url": "/assets/videos/colores/violeta.mp4", "orden": 12},
+    
     *[
         {"categoria": "Números", "nombre": nombre, "descripcion": f"Seña correspondiente al número {numero}.", "imagen_url": f"/assets/signs/numeros/{numero}.png", "video_url": f"/assets/videos/numeros/{numero}.mp4", "orden": numero}
         for numero, nombre in [(0,"Cero"), (1, "Uno"), (2, "Dos"), (3, "Tres"), (4, "Cuatro"), (5, "Cinco"), (6, "Seis"),(7, "Siete"), (8, "Ocho"), (9, "Nueve"), (10, "Diez"),(20, "Veinte"), (30, "Treinta"), (40, "Cuarenta"), (50, "Cincuenta"), (60, "Sesenta"), (70, "Setenta"), (80, "Ochenta"), (90, "Noventa"), (100, "Cien")]

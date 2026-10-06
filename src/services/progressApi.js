@@ -193,6 +193,12 @@ export async function obtenerContenidoAprendizaje() {
   return requestJson("/api/contenido-aprendizaje");
 }
 
+export async function obtenerRondaDesafios(categoriaId, cantidad = 5) {
+  return requestJson(
+    `/api/desafios-interactivos/categorias/${encodeURIComponent(categoriaId)}/ronda?cantidad=${encodeURIComponent(cantidad)}`
+  );
+}
+
 export async function registrarRondaMinijuego(payload) {
   const usuarioId = normalizeUserId(payload?.usuario_id);
 
