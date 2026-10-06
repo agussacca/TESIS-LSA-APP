@@ -1,0 +1,15 @@
+.git
+.venv
+venv
+__pycache__
+*.py[cod]
+.pytest_cache
+tests
+docs
+outputs
+dataset/abecedario_lsa_raw
+dataset/abecedario_lsa_holdout
+dataset/abecedario_lsa_live
+*.db
+*.db-shm
+*.db-wal

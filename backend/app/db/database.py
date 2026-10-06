@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from collections.abc import Generator
+import os
 
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-DATABASE_URL = "sqlite:///./lsa_app.db"
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./lsa_app.db")
 
 engine = create_engine(
     DATABASE_URL,

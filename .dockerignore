@@ -1,0 +1,14 @@
+.git
+.github
+backend
+node_modules
+dist
+dist-ssr
+*.log
+.venv
+venv
+__pycache__
+.pytest_cache
+reportes
+*.rar
+.env

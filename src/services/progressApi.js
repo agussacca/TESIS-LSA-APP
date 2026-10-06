@@ -1,7 +1,7 @@
 // progressApi.js
 import { getAuthToken } from "../utils/authSession";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 function buildUrl(path) {
   return `${API_BASE_URL}${path}`;
